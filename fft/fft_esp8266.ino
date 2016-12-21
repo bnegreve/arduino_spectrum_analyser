@@ -1,17 +1,6 @@
 /*
-  Example of use of the FFT libray
-        Copyright (C) 2014 Enrique Condes
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  
+  Spectrum analyser for Florian's LED display. Author Benjamin Negrevergne. 
+  Based on example from the  FFT libray (Copyright (C) 2014 Enrique Condes). 
 */
 
 #include "arduinoFFT.h"
@@ -37,6 +26,9 @@ double vImag[samples];
 
 #define Theta 6.2831 //2*Pi
 
+void printSpectrum(double *vData, uint8_t size, uint8_t num_rows); 
+
+
 void setup()
 {
   Serial.begin(115200);
@@ -61,7 +53,7 @@ void loop()
     long t0, t;
     t0 = micros(); 
 
-    for(int i = 0; i < samples; i++){
+    for(uint8_t i = 0; i < samples; i++){
       vReal[i] = (double)analogRead(0);
       vImag[i] = 0;   
       delayMicroseconds(1000); // sample at 0.25Khz
@@ -69,7 +61,7 @@ void loop()
     
     t = micros() - t0; 
     samplingFrequency = (float)samples*1000/t; 
-    for(int i = 0; i < samples; i++){
+    for(uint8_t i = 0; i < samples; i++){
       Serial.println(vReal[i]); 
     }
   

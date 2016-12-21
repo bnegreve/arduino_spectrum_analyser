@@ -10,6 +10,19 @@ Dependencies:
 https://github.com/kosme/arduinoFFT
 
 
+Compile/run:
+------------
+
+Move to the fft directory
+$ cd fft
+
+To compile type
+$ make
+
+
+To view the output type
+$ make monitor
+
 
 fht
 ===
@@ -21,6 +34,9 @@ http://wiki.openmusiclabs.com/wiki/ArduinoFFT
 Compile/run:
 ------------
 
+Move to the fht directory
+$ cd fht
+
 To compile type
 $ make
 
@@ -31,4 +47,6 @@ $ make monitor
 
 Known bugs: 
 -----------
-This library isn't compatible with the most recent version of the arduino software. Thus it cannot run on the esp8266 (needed for a certain project). 
+The fht library isn't compatible with the most recent version of the arduino software. Thus it cannot run on the esp8266 (needed for a certain project). 
+
+I generally got better results (less noisy) with the fht library, altough I suspect it requires more CPU.
