@@ -1,0 +1,24 @@
+This program is a spectrum analyser to analyse anlog data on pin A0.
+The resulting spectrum is visible on the Serial output
+
+Dependencies:
+-------------
+http://wiki.openmusiclabs.com/wiki/ArduinoFFT
+
+Compile/run:
+------------
+
+To compile type
+$ make
+
+
+To view the output type
+$ make monitor
+
+
+Known bugs: 
+-----------
+This library isn't compatible with the most recent version of the arduino software.
+
+
+
