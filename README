@@ -1,5 +1,18 @@
-This program is a spectrum analyser to analyse anlog data on pin A0.
-The resulting spectrum is visible on the Serial output
+These are test programs to do sound spectral analysis on arduino using standard fft and  fht libraries.
+
+Analog data is picked up from ADC pin A0. The resulting spectrum is visible ASCII stylel on the Serial output. 
+
+fft
+===
+
+Dependencies:
+-------------
+https://github.com/kosme/arduinoFFT
+
+
+
+fht
+===
 
 Dependencies:
 -------------
@@ -18,7 +31,4 @@ $ make monitor
 
 Known bugs: 
 -----------
-This library isn't compatible with the most recent version of the arduino software.
-
-
-
+This library isn't compatible with the most recent version of the arduino software. Thus it cannot run on the esp8266 (needed for a certain project). 
