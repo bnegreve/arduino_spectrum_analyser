@@ -24,16 +24,29 @@ double vImag[samples];
 #define SCL_TIME 0x01
 #define SCL_FREQUENCY 0x02
 
+
+
+
 #define Theta 6.2831 //2*Pi
 
 void printSpectrum(double *vData, uint8_t size, uint8_t num_rows); 
 
+
+#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 
 void setup()
 {
   Serial.begin(115200);
   Serial.println("Ready");
   pinMode(0, INPUT);
+
+  /* Speedup the ADC */
+  sbi(ADCSRA, ADPS2);
+  cbi(ADCSRA, ADPS1);
+  cbi(ADCSRA, ADPS0);
+
+
 }
 
 void loop() 
@@ -56,14 +69,17 @@ void loop()
     for(uint8_t i = 0; i < samples; i++){
       vReal[i] = (double)analogRead(0);
       vImag[i] = 0;   
-      delayMicroseconds(1000); // sample at 0.25Khz
+      //delayMicroseconds(1000); // sample at 0.25Khz
     }
     
     t = micros() - t0; 
-    samplingFrequency = (float)samples*1000/t; 
-    for(uint8_t i = 0; i < samples; i++){
-      Serial.println(vReal[i]); 
-    }
+    Serial.println(t); 
+    Serial.println(1 / ((float)t/1.0E6)); 
+
+    /* samplingFrequency = (float)samples*1000/t;  */
+    /* for(uint8_t i = 0; i < samples; i++){ */
+    /*   Serial.println(vReal[i]);  */
+    /* } */
   
   Serial.println("Data:");
   //PrintVector(vReal, samples, SCL_TIME);
