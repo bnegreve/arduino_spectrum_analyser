@@ -13,6 +13,7 @@
 //#define NDEBUG // Uncomment for production 
 #define DISPLAY_WIDTH 48
 #define DISPLAY_HEIGHT 8
+#define WINDOW_SIZE 16 // Compute the maximum signal over the WIDOW_SIZE passed values
 
 /* FFT variables */
 const uint16_t numSamples = 128; //This value MUST ALWAYS be a power of 2
@@ -41,7 +42,6 @@ long t0;
 
 
 /* Main functions */ 
-
 void sampleFromADC(double *data, uint8_t numSamples);
 
 /* Compute FFT from sampled data in data, and store magnitude for each band back into data (only the first size / 2 elements are used) */
@@ -61,6 +61,7 @@ void printGraph(uint8_t *graphData, uint8_t numRows, uint8_t totalNumCols);
 
 /* Helper functions (do not export) */ 
 static double maxv(double *data, uint8_t size);
+static double maxSlidingWindow(double *data, uint8_t size); // compute the maximum value over a series of past values. 
 static void startSampling();
 static void printSamplingInfo(double *data, uint8_t size);
 static void printVector(double *vData, uint8_t bufferSize, uint8_t scaleType); 
@@ -139,27 +140,13 @@ void computeFFT(double *data, uint8_t numSamples){
 
 }
 
-static uint8_t encodeBar(uint8_t val, uint8_t numRows){
-  if(val >= numRows) {
-    Serial.println((1<<numRows) - 1, HEX); 
-    return (1<<numRows) - 1; // all led on.
-  }
-
-  uint8_t res = 0;
-  for(uint8_t i = 0; i < val; i++){
-    res |= (1<<i); 
-  }
-  return res; 
-}
-
-
 void buildGraph(uint8_t *out, double *data,  uint8_t numBands, uint8_t numRows, uint8_t numCols, uint8_t colWidth){
 
   assert(numRows <= DISPLAY_HEIGHT); 
   assert(numCols * colWidth <= DISPLAY_WIDTH); 
 
 
-  double scalingFactor = (numRows + 1) / maxv(data, numBands);  // used to bring all values back in the
+  double scalingFactor = (numRows + 1) / maxSlidingWindow(data, numBands);  // used to bring all values back in the
 								// interval [0 - numRows] (inclusive because
 								// we can display 9 distinct values with 8 leds.)
 
@@ -220,6 +207,19 @@ void printGraph(uint8_t *graphData, uint8_t numRows, uint8_t totalNumCols){
 }
 
 
+static uint8_t encodeBar(uint8_t val, uint8_t numRows){
+  if(val >= numRows) {
+    Serial.println((1<<numRows) - 1, HEX); 
+    return (1<<numRows) - 1; // all led on.
+  }
+
+  uint8_t res = 0;
+  for(uint8_t i = 0; i < val; i++){
+    res |= (1<<i); 
+  }
+  return res; 
+}
+
 /* Compute the maximum value of a vector of size > 0 */
 static double maxv(double *data, uint8_t size){
   assert(size != 0); 
@@ -229,6 +229,31 @@ static double maxv(double *data, uint8_t size){
   }
   return max; 
 }
+
+static double maxSlidingWindow(double *data, uint8_t size){
+  /* Maybe a linked list would be better ...*/
+  
+  static double previousValues[WINDOW_SIZE] = {0}; 
+
+  double currentMax = 0; 
+
+  /* shift all values by one and find the max value*/
+  for(int i = 1; i < WINDOW_SIZE; i++){
+    previousValues[i-1] = previousValues[i]; 
+    currentMax = previousValues[i-1] > currentMax ? previousValues[i-1] : currentMax; 
+  }
+
+  double newVal = maxv(data, size);  
+  previousValues[WINDOW_SIZE - 1] = newVal; 
+  currentMax = newVal > currentMax ? newVal : currentMax; 
+
+  Serial.print("MAAXX ");
+  Serial.println(currentMax); 
+
+  return currentMax;   
+}
+
+
 
 static void startSampling(){
 #ifndef NDEBUG
