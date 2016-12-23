@@ -15,10 +15,9 @@
 #define DISPLAY_HEIGHT 8
 
 /* FFT variables */
-const uint16_t samples = 128; //This value MUST ALWAYS be a power of 2
-double vReal[samples]; 
-double vImag[samples];
+const uint16_t numSamples = 128; //This value MUST ALWAYS be a power of 2
 arduinoFFT FFT = arduinoFFT(); /* Create FFT object */
+
 
 /* Required for speeding up the ADC */ 
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
@@ -43,6 +42,11 @@ long t0;
 
 /* Main functions */ 
 
+void sampleFromADC(double *data, uint8_t numSamples);
+
+/* Compute FFT from sampled data in data, and store magnitude for each band back into data (only the first size / 2 elements are used) */
+void computeFFT(double *data, uint8_t numSamples);
+
 /* Build the encoded graph from the fft output data. 
 - The total number of columns in the graph is numCols * colWidth. 
 - numRows should be 8 for a display with 8 leds 
@@ -58,7 +62,7 @@ void printGraph(uint8_t *graphData, uint8_t numRows, uint8_t totalNumCols);
 /* Helper functions (do not export) */ 
 static double maxv(double *data, uint8_t size);
 static void startSampling();
-static void printSamplingInfo();
+static void printSamplingInfo(double *data, uint8_t size);
 static void printVector(double *vData, uint8_t bufferSize, uint8_t scaleType); 
 static uint8_t encodeBar(uint8_t val, uint8_t numRows); 
 
@@ -79,45 +83,60 @@ void setup()
 
 void loop() 
 {
-  
+
+  double data[numSamples]; 
+  uint8_t bars[DISPLAY_WIDTH] = {0};  
+  uint8_t colWidth = 1; 
+
+  sampleFromADC(data, numSamples); 
+  computeFFT(data, numSamples); 
+  buildGraph(bars, data, numSamples/2, DISPLAY_HEIGHT, DISPLAY_WIDTH, colWidth);
+  printGraph(bars, 8, DISPLAY_WIDTH); 
+  delay(1000); /* Repeat after delay */
+
+}
+
+void sampleFromADC(double *data, uint8_t numSamples){
   startSampling(); 
     
   #ifdef GENERATE_FAKE_SIGNAL
-  double cycles = (((samples-1) * signalFrequency) / samplingFrequency); //Number of signal cycles that the sampling will read
-  for (uint8_t i = 0; i < samples; i++) 
-  {
-    vReal[i] = uint8_t((amplitude * (sin((i * (Theta * cycles)) / samples))) / 2.0);// Build data with positive and negative values
-    vImag[i] = 0;    
-    //vReal[i] = uint8_t((amplitude * (sin((i * (6.2831 * cycles)) / samples) + 1.0)) / 2.0);// Build data displaced on the Y axis to include only positive values
+  double cycles = (((numSamples-1) * signalFrequency) / samplingFrequency); //Number of signal cycles that the sampling will read
+  for (uint8_t i = 0; i < numSamples; i++){
+    data[i] = uint8_t((amplitude * (sin((i * (Theta * cycles)) / numSamples))) / 2.0);// Build data with positive and negative values
+    //data[i] = uint8_t((amplitude * (sin((i * (6.2831 * cycles)) / numSamples) + 1.0)) / 2.0);// Build data displaced on the Y axis to include only positive values
   }
   #else
-  for(uint8_t i = 0; i < samples; i++){
-    vReal[i] = (double)analogRead(0);
-    vImag[i] = 0;
+  for(uint8_t i = 0; i < numSamples; i++){
+    data[i] = (double)analogRead(0);
   }
   #endif 
 
-  printSamplingInfo(); 
-  
-  //  Serial.println("Data:");
-  //  printVector(vReal, samples, SCL_TIME);
-  FFT.Windowing(vReal, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);  /* Weigh data */
-  //Serial.println("Weighed data:");
-  //printVector(vReal, samples, SCL_TIME);
-  FFT.Compute(vReal, vImag, samples, FFT_FORWARD); /* Compute FFT */
-  //  Serial.println("Computed Real values:");
- // printVector(vReal, samples, SCL_INDEX);
-  //Serial.println("Computed Imaginary values:");
- // printVector(vImag, samples, SCL_INDEX);
-  FFT.ComplexToMagnitude(vReal, vImag, samples); /* Compute magnitudes */
-  Serial.println("Computed magnitudes:");
-  printVector(vReal, (samples >> 1), SCL_FREQUENCY);  
+  printSamplingInfo(data, numSamples); 
+ 
+}
 
-  uint8_t bars[DISPLAY_WIDTH] = {0};  
-  uint8_t colWidth = 1; 
-  buildGraph(bars, vReal, samples/2, DISPLAY_HEIGHT, DISPLAY_WIDTH, colWidth);
-  printGraph(bars, 8, DISPLAY_WIDTH); 
-  delay(1000); /* Repeat after delay */
+void computeFFT(double *data, uint8_t numSamples){
+
+  double vImag[numSamples] = {0}; // required!
+  //data is vReal[numSamples] ..
+  
+  FFT.Windowing(data, numSamples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);  /* Weigh data */
+  //Serial.println("Weighed data:");
+  //printVector(vReal, numSamples, SCL_TIME);
+
+  FFT.Compute(data, vImag, numSamples, FFT_FORWARD); /* Compute FFT */
+  //Serial.println("Computed Real values:");
+  //printVector(vReal, numSamples, SCL_INDEX);
+  //Serial.println("Computed Imaginary values:");
+  //printVector(vImag, numSamples, SCL_INDEX);
+
+  FFT.ComplexToMagnitude(data, vImag, numSamples); /* Compute magnitudes */
+
+  #ifdef NDEBUG
+  Serial.println("Computed magnitudes:");
+  printVector(data, (numSamples >> 1), SCL_FREQUENCY);
+  #endif
+
 }
 
 static uint8_t encodeBar(uint8_t val, uint8_t numRows){
@@ -216,7 +235,7 @@ static void startSampling(){
     t0 = micros(); 
 #endif
 }
-static void printSamplingInfo(){
+static void printSamplingInfo(double *data, uint8_t size){
 #ifndef NDEBUG    
     float t = (micros() - t0) / 1.0E3; // time (ms) 
 
@@ -224,13 +243,13 @@ static void printSamplingInfo(){
     Serial.println(t);
 
     Serial.print("Time per sample (ms) : ");
-    Serial.println(t/samples);
+    Serial.println(t/size);
 
     Serial.print("Sampling frequency (hz) : ");
-    Serial.println((1 / (t/1E3)) * samples);
+    Serial.println((1 / (t/1E3)) * size);
 
     Serial.print("Max ADC value: ");
-    Serial.println(maxv(vReal, samples)); 
+    Serial.println(maxv(data, size)); 
 #endif
 }
 
@@ -251,7 +270,7 @@ static void printVector(double *vData, uint8_t bufferSize, uint8_t scaleType)
         abscissa = ((i * 1.0) / samplingFrequency);
   break;
       case SCL_FREQUENCY:
-        abscissa = ((i * 1.0 * samplingFrequency) / samples);
+        abscissa = ((i * 1.0 * samplingFrequency) / numSamples);
   break;
     }
     Serial.print(abscissa, 6);
