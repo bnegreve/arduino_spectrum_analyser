@@ -7,13 +7,12 @@
 #include <assert.h>
 #include "arduinoFFT.h"
 
-
 /* Global vars & defines  */
 
 //#define NDEBUG // Uncomment for production 
 #define DISPLAY_WIDTH 48
 #define DISPLAY_HEIGHT 8
-#define WINDOW_SIZE 16 // Compute the maximum signal over the WIDOW_SIZE passed values
+#define WINDOW_SIZE 16 // Compute the maximum signal over the WIDOW_SIZE passed values // do not increase too much, uses memory
 
 /* FFT variables */
 const uint16_t numSamples = 128; //This value MUST ALWAYS be a power of 2
@@ -234,20 +233,26 @@ static double maxSlidingWindow(double *data, uint8_t size){
   /* Maybe a linked list would be better ...*/
   
   static double previousValues[WINDOW_SIZE] = {0}; 
+  static double previousMax = 0;  // always contains the maximum for all value except the last record. 
+  static uint8_t count = 0; 
 
-  double currentMax = 0; 
 
-  /* shift all values by one and find the max value*/
-  for(int i = 1; i < WINDOW_SIZE; i++){
-    previousValues[i-1] = previousValues[i]; 
-    currentMax = previousValues[i-1] > currentMax ? previousValues[i-1] : currentMax; 
+  /* every 255 frames, shift all values by one, drop the oldest value and set the new value to 0 */
+  if( count++ == 0 ) { 
+    previousMax = 0; // reset previousMax
+    for(int i = 1; i < WINDOW_SIZE; i++){
+      previousValues[i-1] = previousValues[i]; 
+      previousMax = max(previousValues[i-1], previousMax); 
+    }
   }
+  previousValues[WINDOW_SIZE - 1 ] = 0; 
 
+  /* compute the new value for data and keep the local maximum of this value */ 
   double newVal = maxv(data, size);  
-  previousValues[WINDOW_SIZE - 1] = newVal; 
-  currentMax = newVal > currentMax ? newVal : currentMax; 
-
-  Serial.print("MAAXX ");
+  previousValues[WINDOW_SIZE - 1] =  max(previousValues[WINDOW_SIZE - 1], newVal);
+  
+  double currentMax = max(previousMax,   previousValues[WINDOW_SIZE - 1]); 
+  Serial.print("Current sliding maximum : ");
   Serial.println(currentMax); 
 
   return currentMax;   
