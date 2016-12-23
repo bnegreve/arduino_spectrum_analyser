@@ -17,7 +17,7 @@
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 
 /* Fake signal generation */
-#define GENERATE_FAKE_SIGNAL 1 //Generate fake signal instead of reading from ADC
+//#define GENERATE_FAKE_SIGNAL 1 //Generate fake signal instead of reading from ADC
 #define Theta 6.2831 //2*Pi
 double signalFrequency = 2000;
 double samplingFrequency = 5000;
@@ -127,7 +127,7 @@ void FFT_For_ESP8266::buildGraph(uint8_t *out, double *data, uint8_t numRows, ui
 }
 
 void FFT_For_ESP8266::printGraph(uint8_t *graphData, uint8_t numRows, uint8_t totalNumCols){
-#ifndef NDEBUG
+  //#ifndef NDEBUG
   assert(totalNumCols <= _displayWidth);
   assert(numRows <= _displayHeight);
 
@@ -150,7 +150,7 @@ void FFT_For_ESP8266::printGraph(uint8_t *graphData, uint8_t numRows, uint8_t to
   for(int i = 0; i < totalNumCols; i++)
     Serial.print("-");
   Serial.println();
-#endif
+  //#endif
 }
 
 

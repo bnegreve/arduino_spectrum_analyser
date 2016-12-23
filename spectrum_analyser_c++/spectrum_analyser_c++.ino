@@ -10,11 +10,9 @@
 void setup()
 {
 
-#ifndef NDEBUG
   Serial.begin(115200);
   Serial.println("Ready");
   pinMode(0, INPUT);
-#endif 
 
   /* Speedup the ADC */
   sbi(ADCSRA, ADPS2);
@@ -37,7 +35,7 @@ void loop()
     fft.buildGraph(bars, data, 8, 48, 1);
     fft.printGraph(bars, 8, 48);
 
-    delay(1000);
+    delay(100);
   }
   
 

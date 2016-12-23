@@ -3,7 +3,7 @@
 
 #include "Arduino.h"
 
-//#define NDEBUG // Uncomment for production
+#define NDEBUG // Uncomment for production
 
 class FFT_For_ESP8266 {
   public:
