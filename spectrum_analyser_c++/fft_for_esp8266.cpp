@@ -1,16 +1,7 @@
 #include <arduinoFFT.h>
-
-#include "fft_for_esp8266.h"
-
-/*
-  Spectrum analyser for Florian's LED display. Author Benjamin Negrevergne.
-  Based on example from the  FFT libray (Copyright (C) 2014 Enrique Condes).
-*/
-
 #include <assert.h>
 
-/* Global vars & defines  */
-
+#include "fft_for_esp8266.h"
 
 /* Required for speeding up the ADC */
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
@@ -28,8 +19,6 @@ uint8_t amplitude = 50;
 #define SCL_TIME 0x01
 #define SCL_FREQUENCY 0x02
 
-/*Timing */
-long t0;
 
 
 FFT_For_ESP8266::FFT_For_ESP8266(int displayWidth, int displayHeight,
@@ -38,7 +27,10 @@ FFT_For_ESP8266::FFT_For_ESP8266(int displayWidth, int displayHeight,
   _displayHeight(displayHeight),
   _analogPin(analogPin), 
   _numSamples(numSamples), 
-  _fft(arduinoFFT()){
+  _fft(arduinoFFT()),
+  _previousValues({0}), 
+  _previousSum(0), 
+  _count(0){
 
 }
 
@@ -62,9 +54,6 @@ void FFT_For_ESP8266::sampleFromADC(double *data){
 }
 
 void FFT_For_ESP8266::computeFFT(double *data, double *dataImg){
-
-  // double vImag[_numSamples] = {0}; // required!
-  //data is vReal[_numSamples] ..
 
   _fft.Windowing(data, _numSamples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);  /* Weigh data */
   //Serial.println("Weighed data:");
@@ -91,9 +80,7 @@ void FFT_For_ESP8266::buildGraph(uint8_t *out, double *data, uint8_t numRows, ui
 
   int numBands = _numSamples / 2 - _skipLowBands; 
   
-  //Serial.println(maxSlidingWindow(data, numBands));
-
-  double scalingFactor = (numRows + 1) / maxSlidingWindow(data, numBands);  // used to bring all values back in the
+  double scalingFactor = (numRows + 1) / avgMax(data, numBands);  // used to bring all values back in the
                                 // interval [0 - numRows] (inclusive because
                                 // we can display 9 distinct values with 8 leds.)
 
@@ -171,50 +158,52 @@ uint8_t FFT_For_ESP8266::encodeBar(uint8_t val, uint8_t numRows){
 /* Compute the maximum value of a vector of size > 0 */
 double FFT_For_ESP8266::maxv(double *data, uint8_t size){
   assert(size != 0);
-  double max = data[0];
-  for(int i = 1; i < size; i++){
+  assert(size - _skipLowBands > 0);
+
+  int i = _skipLowBands; 
+  double max = data[i];
+  for(i = _skipLowBands+1; i < size; i++){
     max = data[i]>max?data[i]: max;
   }
   return max;
 }
 
-double FFT_For_ESP8266::maxSlidingWindow(double *data, uint8_t size){
-  /* Maybe a linked list would be better ...*/
+double FFT_For_ESP8266::avgMax(double *data, uint8_t size){
+  /* every 16 frames, shift all values by one, drop the oldest value and set the new value to 0 */
 
-  static double previousValues[WINDOW_SIZE] = {0};
-  static double previousMax = 0;  // always contains the maximum for all value except the last record.
-  static uint8_t count = 0;
+  if( _count++ % 16  == 0) {
 
+    // Substract oldest max, add newst max
+    _previousSum -= _previousValues[0]; 
+    _previousSum += _previousValues[_windowSize-1];
 
-  /* every 255 frames, shift all values by one, drop the oldest value and set the new value to 0 */
-  if( count++ == 0 ) {
-    //Serial.println("drop");
-    previousMax = 0; // reset previousMax
-    for(int i = 1; i < WINDOW_SIZE; i++){
-      previousValues[i-1] = previousValues[i];
-      previousMax = max(previousValues[i-1], previousMax);
+    // shift all values by one in previousValues
+    for(int i = 1; i < _windowSize; i++){
+      _previousValues[i-1] = _previousValues[i];
     }
+
+    // Reset most recent max to 0.
+    _previousValues[ _windowSize -1 ] = 0; 
   }
-  previousValues[WINDOW_SIZE - 1 ] = 0;
 
-  /* compute the new value for data and keep the local maximum of this value */
-  double newVal = maxv(data, size);
-  previousValues[WINDOW_SIZE - 1] =  max(previousValues[WINDOW_SIZE - 1], newVal);
-
-  double currentMax = max(previousMax,   previousValues[WINDOW_SIZE - 1]);
-
-  return currentMax;
+    // set new value
+    _previousValues[ _windowSize - 1 ] = max(_previousValues[ _windowSize - 1 ],
+					     maxv(data, size));
+    double sum = _previousSum + _previousValues[ _windowSize - 1 ];
+    //    Serial.println(sum / _windowSize ); 
+    return sum / _windowSize; 
 }
+
 
 void FFT_For_ESP8266::startSampling(){
 #ifndef NDEBUG
-    t0 = micros();
+    _t0 = micros();
 #endif
 }
 
 void FFT_For_ESP8266::printSamplingInfo(double *data, uint8_t size){
 #ifndef NDEBUG
-    float t = (micros() - t0) / 1.0E3; // time (ms)
+    float t = (micros() - _t0) / 1.0E3; // time (ms)
 
     Serial.print("Sampling time : ");
     Serial.println(t);

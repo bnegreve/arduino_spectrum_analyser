@@ -1,3 +1,9 @@
+/*
+  Spectrum analyser for Florian's LED display. 
+  Author: Benjamin Negrevergne.
+  Based on example from the  FFT libray (Copyright (C) 2014 Enrique Condes).
+*/
+
 #ifndef FFT_For_ESP8266_h
 #define FFT_For_ESP8266_h
 
@@ -39,14 +45,24 @@ class FFT_For_ESP8266 {
   const int _numSamples; 
   arduinoFFT _fft; 
 
-  const short _skipLowBands = 1; // skip first n bands  (lower frequencies)
-  static const uint8_t WINDOW_SIZE = 3; 
+  static const short _skipLowBands = 1; // skip first n bands  (lower frequencies)
+  static const short _windowSize = 3; 
 
+  double _previousValues[_windowSize]; 
+  double _previousSum; 
+  short _count; 
+
+
+
+  #ifndef NDEBUG
+  long _t0;
+  #endif
 
 
   /* Helper functions (do not export) */
   double maxv(double *data, uint8_t size);
-  double maxSlidingWindow(double *data, uint8_t size); // compute the maximum value over a series of past values.
+  double maxSlidingWindow(double *data, uint8_t size); // compute the maximum of the maxima over a series of passed values
+  double avgMax(double *data, uint8_t size); // compute the avg of the maxima 
   void startSampling();
   void printSamplingInfo(double *data, uint8_t size);
   void printVector(double *vData, uint8_t bufferSize, uint8_t scaleType);
