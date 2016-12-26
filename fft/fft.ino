@@ -1,11 +1,20 @@
 /*
   Spectrum analyser for Florian's LED display. Author Benjamin Negrevergne. 
   Based on example from the  FFT libray (Copyright (C) 2014 Enrique Condes). 
-  Author: Benjamin Negrevergne
 */
 
 #include <assert.h>
 #include "arduinoFFT.h"
+
+
+/* 
+TODO Composante continue 
+Reduire l'ampleur de max sliding window
+imaginairy array a corriger
+Lissage de la descente des bars. 
+Ne pas recalculer le produit a chaque foisi dans le codage des bars. 
+- quand max = 0 ne rien afficher
+*/
 
 /* Global vars & defines  */
 
@@ -24,7 +33,7 @@ arduinoFFT FFT = arduinoFFT(); /* Create FFT object */
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 
 /* Fake signal generation */
-#define GENERATE_FAKE_SIGNAL 1 //Generate fake signal instead of reading from ADC
+//#define GENERATE_FAKE_SIGNAL 1 //Generate fake signal instead of reading from ADC
 #define Theta 6.2831 //2*Pi
 double signalFrequency = 2000;
 double samplingFrequency = 5000;
@@ -132,7 +141,7 @@ void computeFFT(double *data, uint8_t numSamples){
 
   FFT.ComplexToMagnitude(data, vImag, numSamples); /* Compute magnitudes */
 
-  #ifdef NDEBUG
+  #ifndef NDEBUG
   Serial.println("Computed magnitudes:");
   printVector(data, (numSamples >> 1), SCL_FREQUENCY);
   #endif
@@ -159,7 +168,7 @@ void buildGraph(uint8_t *out, double *data,  uint8_t numBands, uint8_t numRows, 
       barHeight = data[j] > barHeight ? data[j] : barHeight; 
     }
 
-    #ifndef DNDEBUG
+    #ifndef NDEBUG
     Serial.print("Col ");
     Serial.print(i);
     Serial.print(" : Band from ");
@@ -208,7 +217,6 @@ void printGraph(uint8_t *graphData, uint8_t numRows, uint8_t totalNumCols){
 
 static uint8_t encodeBar(uint8_t val, uint8_t numRows){
   if(val >= numRows) {
-    Serial.println((1<<numRows) - 1, HEX); 
     return (1<<numRows) - 1; // all led on.
   }
 
@@ -252,8 +260,8 @@ static double maxSlidingWindow(double *data, uint8_t size){
   previousValues[WINDOW_SIZE - 1] =  max(previousValues[WINDOW_SIZE - 1], newVal);
   
   double currentMax = max(previousMax,   previousValues[WINDOW_SIZE - 1]); 
-  Serial.print("Current sliding maximum : ");
-  Serial.println(currentMax); 
+  /* Serial.print("Current sliding maximum : "); */
+  /* Serial.println(currentMax);  */
 
   return currentMax;   
 }
