@@ -53,7 +53,29 @@ class FFT_For_ESP8266 {
   arduinoFFT _fft; 
 
   static const short _skipLowBands = 1; // skip first n bands  (lower frequencies)
-  static const short _windowSize = 3; 
+
+  /* Parameters for the smooth scaling ...
+   *
+   * The vertical scale of the graph adjusted dynamically based on a
+   * maximum value which depends on the average maxima computed over a
+   * sliding window of size _windowSize.
+   *
+   * In order to increase the time span of the sliding window without
+   * using too much extra RAM, frames are grouped together and a local
+   * maxima is computed for each group of frames. The size of each group
+   * is controled by _frameGroupSize
+   *
+   * The final maximum is computed with the following formula 
+   * max( max(current_frame), avg(max(passed_n_frame_group)) ) 
+   * 
+   * Increasing _windowSize will increase the smoothing but will also
+   * use more memory. Increasing _frameGroupSize will achieve a
+   * similar result without incrinsing the memory usage, but may
+   * result in more abrut changes of the scaling which can be
+   * noticeable.
+   */
+  static const short _windowSize = 4;
+  static const short _frameGroupSize = 16;
 
   double _previousValues[_windowSize]; 
   double _previousSum; 

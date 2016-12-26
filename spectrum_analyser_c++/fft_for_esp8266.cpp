@@ -184,8 +184,7 @@ double FFT_For_ESP8266::maxv(double *data, uint8_t size){
 
 double FFT_For_ESP8266::smoothMax(double *data, uint8_t size){
   /* every 16 frames, shift all values by one, drop the oldest value and set the new value to 0 */
-
-  if( _count++ % 16  == 0) {
+  if( _count++ % _frameGroupSize  == 0) {
 
     // Substract oldest max, add newst max
     _previousSum -= _previousValues[0]; 
@@ -203,11 +202,16 @@ double FFT_For_ESP8266::smoothMax(double *data, uint8_t size){
   // set new value
   double currentMax = maxv(data, size); 
   _previousValues[ _windowSize - 1 ] = max(_previousValues[ _windowSize - 1 ],
-					     currentMax);
-    // printVector(_previousValues, _windowSize, SCL_INDEX); 
+					   currentMax);
+  printVector(_previousValues, _windowSize, SCL_INDEX); 
  
-    double avgMax = (_previousSum + _previousValues[ _windowSize - 1 ] / _windowSize);
-    return max(avgMax, currentMax);  
+  double avgMax = (_previousSum + _previousValues[ _windowSize - 1 ]) / _windowSize;
+
+  #ifndef NDEBUG
+  Serial.print("Smoothmax: ");
+  Serial.println(max(avgMax, currentMax)); 
+  #endif 
+  return max(avgMax, currentMax);  
 }
 
 
