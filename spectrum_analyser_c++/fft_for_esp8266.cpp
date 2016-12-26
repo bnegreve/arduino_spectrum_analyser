@@ -97,7 +97,7 @@ void FFT_For_ESP8266::buildGraph(uint8_t *out, double *data){
 
   int numBands = _numSamples / 2 - _skipLowBands; 
   
-  double scalingFactor = (_numLines + 1) / avgMax(data, numBands);  // used to bring all values back in the
+  double scalingFactor = (_numLines + 1) / smoothMax(data, numBands);  // used to bring all values back in the
                                 // interval [0 - _numLines] (inclusive because
                                 // we can display 9 distinct values with 8 leds.)
 
@@ -182,7 +182,7 @@ double FFT_For_ESP8266::maxv(double *data, uint8_t size){
   return max;
 }
 
-double FFT_For_ESP8266::avgMax(double *data, uint8_t size){
+double FFT_For_ESP8266::smoothMax(double *data, uint8_t size){
   /* every 16 frames, shift all values by one, drop the oldest value and set the new value to 0 */
 
   if( _count++ % 16  == 0) {
@@ -200,14 +200,14 @@ double FFT_For_ESP8266::avgMax(double *data, uint8_t size){
     _previousValues[ _windowSize -1 ] = 0; 
   }
 
-    // set new value
-    _previousValues[ _windowSize - 1 ] = max(_previousValues[ _windowSize - 1 ],
-					     maxv(data, size));
+  // set new value
+  double currentMax = maxv(data, size); 
+  _previousValues[ _windowSize - 1 ] = max(_previousValues[ _windowSize - 1 ],
+					     currentMax);
     // printVector(_previousValues, _windowSize, SCL_INDEX); 
  
-    double sum = _previousSum + _previousValues[ _windowSize - 1 ];
-    Serial.println(sum / _windowSize ); 
-    return sum / _windowSize; 
+    double avgMax = (_previousSum + _previousValues[ _windowSize - 1 ] / _windowSize);
+    return max(avgMax, currentMax);  
 }
 
 

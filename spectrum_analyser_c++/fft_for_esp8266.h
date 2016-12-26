@@ -68,8 +68,9 @@ class FFT_For_ESP8266 {
 
   /* Helper functions (do not export) */
   double maxv(double *data, uint8_t size);
-  /* Return the average maximum over a number of passed values */
-  double avgMax(double *data, uint8_t size); // compute the avg of the maxima 
+
+  // return max( max(current_frame), avg(max(passed_n_frames)) ) 
+  double smoothMax(double *data, uint8_t size); 
   void startSampling();
   void printSamplingInfo(double *data, uint8_t size);
   void printVector(double *vData, uint8_t bufferSize, uint8_t scaleType);
