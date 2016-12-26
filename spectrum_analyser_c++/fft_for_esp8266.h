@@ -61,7 +61,7 @@ class FFT_For_ESP8266 {
 
   /* Helper functions (do not export) */
   double maxv(double *data, uint8_t size);
-  double maxSlidingWindow(double *data, uint8_t size); // compute the maximum of the maxima over a series of passed values
+  /* Return the average maximum over a number of passed values */
   double avgMax(double *data, uint8_t size); // compute the avg of the maxima 
   void startSampling();
   void printSamplingInfo(double *data, uint8_t size);
