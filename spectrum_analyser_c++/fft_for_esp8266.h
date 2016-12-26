@@ -11,10 +11,10 @@
 
 //#define NDEBUG // Uncomment for production
 
+typedef uint8_t output_t; 
+
 class FFT_For_ESP8266 {
   public:
-
-  typedef uint8_t output_t; 
 
   /* ctor */
   FFT_For_ESP8266(short analogPin, int numSamples,
@@ -22,21 +22,32 @@ class FFT_For_ESP8266 {
 		  int numLines = 0, int barWidth = 3, int skipLine = 1); 
 
   /* Main functions */
-  void sampleFromADC(double *data);
+  void sampleFromADC();
 
   /* Compute FFT from sampled data in data, and store magnitude for each band back into data (only the first size / 2 elements are used) */
-  void computeFFT(double *data, double *dataImg);
+  void computeFFT();
 
   /* Build the encoded graph from the fft output data.
-     - The total number of columns in the graph is numCols * colWidth.
-     - numRows should be 8 for a display with 8 leds
-  */
-  void buildGraph(output_t *out, double *data);
+   *  - The total number of columns in the graph is numCols * colWidth.
+   *  - numRows should be 8 for a display with 8 leds
+   */
+  void buildGraph(output_t *out);
 
-  /* Print the output of build graph on Serial. Warning totalNumCols is numCols * colWidth (not just numCols).
-     Does nothing if NDEBUG is defined
+  /* Same as before, but uses internal storage to save memory
+   * Use this version unless you have a reason to do otherwise
+   */
+  output_t *buildGraph();
+
+  /* Print the output of build graph on Serial. Warning totalNumCols
+   * is numCols * colWidth (not just numCols).  Does nothing if NDEBUG
+   * is defined
   */
   void printGraph(output_t *graphData);
+
+  /* Use this method instead of the previous one if you have called
+   * buildGraph without any argument */ 
+  void printGraph();
+
 
 
   private:
@@ -66,6 +77,10 @@ class FFT_For_ESP8266 {
   double _previousSum; 
   short _count; 
 
+ public:
+
+  double *_data; 
+  double *_dataImg; 
 
 
   #ifndef NDEBUG

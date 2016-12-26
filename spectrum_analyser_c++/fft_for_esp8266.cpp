@@ -66,56 +66,70 @@ FFT_For_ESP8266::FFT_For_ESP8266(short analogPin, int numSamples,
     /* output_t should be big enough to store one column stored as zeros and ones */
     assert(sizeof(output_t) * 8 >= log(_displayHeight) / log(2));
     assert(_numBars <= _numSamples / 2);
+
+    _data = new double[_numSamples];
+    _dataImg = new double[_numSamples];
+    
     
 }
 
-void FFT_For_ESP8266::sampleFromADC(double *data){
+void FFT_For_ESP8266::sampleFromADC(){
   startSampling();
 
   #ifdef GENERATE_FAKE_SIGNAL
   double cycles = (((_numSamples-1) * signalFrequency) / samplingFrequency); //Number of signal cycles that the sampling will read
   for (uint8_t i = 0; i < _numSamples; i++){
-    data[i] = uint8_t((amplitude * (sin((i * (Theta * cycles)) / _numSamples))) / 2.0);// Build data with positive and negative values
-    //data[i] = uint8_t((amplitude * (sin((i * (6.2831 * cycles)) / _numSamples) + 1.0)) / 2.0);// Build data displaced on the Y axis to include only positive values
+    _data[i] = uint8_t((amplitude * (sin((i * (Theta * cycles)) / _numSamples))) / 2.0);// Build _data with positive and negative values
+    //_data[i] = uint8_t((amplitude * (sin((i * (6.2831 * cycles)) / _numSamples) + 1.0)) / 2.0);// Build _data displaced on the Y axis to include only positive values
   }
   #else
   for(uint8_t i = 0; i < _numSamples; i++){
-    data[i] = (double)analogRead(_analogPin);
+    _data[i] = (double)analogRead(_analogPin);
   }
   #endif
 
-  printSamplingInfo(data, _numSamples);
+  printSamplingInfo(_data, _numSamples);
 
 }
 
-void FFT_For_ESP8266::computeFFT(double *data, double *dataImg){
+void FFT_For_ESP8266::computeFFT(){
 
-  _fft.Windowing(data, _numSamples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);  /* Weigh data */
-  //Serial.println("Weighed data:");
+  memset(_dataImg, 0, sizeof(double) * _numSamples); 
+
+  _fft.Windowing(_data, _numSamples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);  /* Weigh _data */
+  //Serial.println("Weighed _data:");
   //printVector(vReal, _numSamples, SCL_TIME);
 
-  _fft.Compute(data, dataImg, _numSamples, FFT_FORWARD); /* Compute FFT */
+  _fft.Compute(_data, _dataImg, _numSamples, FFT_FORWARD); /* Compute FFT */
   //Serial.println("Computed Real values:");
   //printVector(vReal, _numSamples, SCL_INDEX);
   //Serial.println("Computed Imaginary values:");
-  //printVector(dataImg, _numSamples, SCL_INDEX);
+  //printVector(_dataImg, _numSamples, SCL_INDEX);
 
-  _fft.ComplexToMagnitude(data, dataImg, _numSamples); /* Compute magnitudes */
+  _fft.ComplexToMagnitude(_data, _dataImg, _numSamples); /* Compute magnitudes */
 
   #ifndef NDEBUG
   Serial.println("Computed magnitudes:");
-  //  printVector(data, (_numSamples >> 1), SCL_FREQUENCY);
+  //  printVector(_data, (_numSamples >> 1), SCL_FREQUENCY);
   #endif
 
 }
 
-void FFT_For_ESP8266::buildGraph(output_t *out, double *data){
+
+output_t *FFT_For_ESP8266::buildGraph(){
+  output_t *graphData = (output_t *)_dataImg; 
+  memset(_dataImg, 0, sizeof(double) * _numSamples); 
+  buildGraph( graphData );
+  return graphData; 
+}
+
+void FFT_For_ESP8266::buildGraph(output_t *out){
   assert(_numLines <= _displayHeight);
   assert(_numBars * _barWidth <= _displayWidth);
 
   int numBands = _numSamples / 2 - _skipLowBands; 
   
-  double scalingFactor = (_numLines + 1) / smoothMax(data + _skipLowBands, numBands);
+  double scalingFactor = (_numLines + 1) / smoothMax(_data + _skipLowBands, numBands);
   // used to bring all values back in the
   // interval [0 - _numLines] (inclusive because
   // we can display 9 distinct values with 8 leds.)
@@ -128,7 +142,7 @@ void FFT_For_ESP8266::buildGraph(output_t *out, double *data){
     double barHeight = 0;
     for(int j = bandStart; j < bandEnd; j++){
       /* take the maximum value of all bands displayed by this column */
-      barHeight = max(data[j],  barHeight);
+      barHeight = max(_data[j],  barHeight);
     }
 
     #ifndef NDEBUG
@@ -182,8 +196,13 @@ void FFT_For_ESP8266::printGraph(output_t *graphData){
   //#endif
 }
 
+void FFT_For_ESP8266::printGraph(){
+  output_t *graphData = (output_t *)_dataImg;
+  printGraph(graphData); 
+}
 
-FFT_For_ESP8266::output_t FFT_For_ESP8266::encodeBar(output_t val){
+
+output_t FFT_For_ESP8266::encodeBar(output_t val){
 
   if(val >= _numLines) {
     // Serial.println((1<<_numLines) - 1, HEX);

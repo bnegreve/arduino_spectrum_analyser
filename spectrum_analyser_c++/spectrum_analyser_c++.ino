@@ -27,12 +27,9 @@ void loop()
 
   for(;;){
 
-    double data[128]; 
-    double dataImg[128] = {0}; 
-    uint8_t bars[48] = {0}; 
-    fft.sampleFromADC(data);
-    fft.computeFFT(data, dataImg); 
-    fft.buildGraph(bars, data);
+    fft.sampleFromADC();
+    fft.computeFFT(); 
+    output_t *bars = fft.buildGraph();
     fft.printGraph(bars);
 
     delay(1000);
