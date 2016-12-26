@@ -105,7 +105,7 @@ void FFT_For_ESP8266::computeFFT(double *data, double *dataImg){
 
 }
 
-void FFT_For_ESP8266::buildGraph(uint8_t *out, double *data){
+void FFT_For_ESP8266::buildGraph(output_t *out, double *data){
   assert(_numLines <= _displayHeight);
   assert(_numBars * _barWidth <= _displayWidth);
 
@@ -118,11 +118,11 @@ void FFT_For_ESP8266::buildGraph(uint8_t *out, double *data){
 
   /* Loop through display columns */
   for(int i = 0; i < _numBars; i++){
-    uint8_t bandStart = ((float)i / _numBars * numBands) + _skipLowBands; 
-    uint8_t bandEnd = ((float)(i+1) / _numBars * numBands) + _skipLowBands;
+    int bandStart = ((float)i / _numBars * numBands) + _skipLowBands; 
+    int bandEnd = ((float)(i+1) / _numBars * numBands) + _skipLowBands;
 
     double barHeight = 0;
-    for(uint8_t j = bandStart; j < bandEnd; j++){
+    for(int j = bandStart; j < bandEnd; j++){
       /* take the maximum value of all bands displayed by this column */
       barHeight = max(data[j],  barHeight);
     }
@@ -139,11 +139,11 @@ void FFT_For_ESP8266::buildGraph(uint8_t *out, double *data){
     Serial.println();
     #endif
 
-    short colStart = i * (_barWidth + _skipCol);
-    short colEnd = i * (_barWidth + _skipCol) + _barWidth; 
+    int colStart = i * (_barWidth + _skipCol);
+    int colEnd = i * (_barWidth + _skipCol) + _barWidth; 
     output_t outVal = encodeBar(barHeight * scalingFactor); 
 
-    short j; 
+    int j; 
     for(j = colStart ; j < colEnd; j++){
       out[j] = outVal;
     }
@@ -179,22 +179,22 @@ void FFT_For_ESP8266::printGraph(uint8_t *graphData){
 }
 
 
-uint8_t FFT_For_ESP8266::encodeBar(uint8_t val){
+FFT_For_ESP8266::output_t FFT_For_ESP8266::encodeBar(output_t val){
 
   if(val >= _numLines) {
     // Serial.println((1<<_numLines) - 1, HEX);
     return (1<<_numLines) - 1; // all led on.
   }
 
-  uint8_t res = 0;
-  for(uint8_t i = 0; i < val; i++){
+  output_t res = 0;
+  for(output_t i = 0; i < val; i++){
     res |= (1<<i);
   }
   return res;
 }
 
 /* Compute the maximum value of a vector of size > 0 */
-double FFT_For_ESP8266::maxv(double *data, uint8_t size){
+double FFT_For_ESP8266::maxv(double *data, int size){
   assert(size != 0);
   assert(size - _skipLowBands > 0);
 
@@ -206,7 +206,7 @@ double FFT_For_ESP8266::maxv(double *data, uint8_t size){
   return max;
 }
 
-double FFT_For_ESP8266::smoothMax(double *data, uint8_t size){
+double FFT_For_ESP8266::smoothMax(double *data, int size){
   /* every 16 frames, shift all values by one, drop the oldest value and set the new value to 0 */
   if( _count++ % _frameGroupSize  == 0) {
 
@@ -245,7 +245,7 @@ void FFT_For_ESP8266::startSampling(){
 #endif
 }
 
-void FFT_For_ESP8266::printSamplingInfo(double *data, uint8_t size){
+void FFT_For_ESP8266::printSamplingInfo(double *data, int size){
 #ifndef NDEBUG
     float t = (micros() - _t0) / 1.0E3; // time (ms)
 
@@ -264,7 +264,7 @@ void FFT_For_ESP8266::printSamplingInfo(double *data, uint8_t size){
 }
 
 
-void FFT_For_ESP8266::printVector(double *vData, uint8_t bufferSize, uint8_t scaleType)
+void FFT_For_ESP8266::printVector(double *vData, int bufferSize, uint8_t scaleType)
 {
 #ifndef NDEBUG
   for (uint16_t i = 0; i < bufferSize; i++)

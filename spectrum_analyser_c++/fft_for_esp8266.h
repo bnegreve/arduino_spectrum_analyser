@@ -31,12 +31,12 @@ class FFT_For_ESP8266 {
      - The total number of columns in the graph is numCols * colWidth.
      - numRows should be 8 for a display with 8 leds
   */
-  void buildGraph(uint8_t *out, double *data);
+  void buildGraph(output_t *out, double *data);
 
   /* Print the output of build graph on Serial. Warning totalNumCols is numCols * colWidth (not just numCols).
      Does nothing if NDEBUG is defined
   */
-  void printGraph(uint8_t *graphData);
+  void printGraph(output_t *graphData);
 
 
   private:
@@ -75,7 +75,7 @@ class FFT_For_ESP8266 {
 
 
   /* Helper functions (do not export) */
-  double maxv(double *data, uint8_t size);
+  double maxv(double *data, int size);
 
   /* Smooth scaling ...
    *
@@ -97,11 +97,11 @@ class FFT_For_ESP8266 {
    * result in more abrut changes of the scaling which can be
    * noticeable.
    */
-  double smoothMax(double *data, uint8_t size); 
+  double smoothMax(double *data, int size); 
   void startSampling();
-  void printSamplingInfo(double *data, uint8_t size);
-  void printVector(double *vData, uint8_t bufferSize, uint8_t scaleType);
-  uint8_t encodeBar(uint8_t val);
+  void printSamplingInfo(double *data, int size);
+  void printVector(double *vData, int bufferSize, uint8_t scaleType);
+  output_t encodeBar(output_t val);
 
 
 
