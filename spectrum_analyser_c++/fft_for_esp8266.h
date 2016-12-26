@@ -19,7 +19,7 @@ class FFT_For_ESP8266 {
   /* ctor */
   FFT_For_ESP8266(short analogPin, int numSamples,
 		  int displayWidth, int displayHeight, int numBars = 0, 
-		  int numLines = 0, int barWidth = 1); 
+		  int numLines = 0, int barWidth = 3, int skipLine = 1); 
 
   /* Main functions */
   void sampleFromADC(double *data);
@@ -50,11 +50,34 @@ class FFT_For_ESP8266 {
   int _numBars; 
   int _numLines; 
   int _barWidth; 
+  int _skipCol; 
   arduinoFFT _fft; 
 
-  static const short _skipLowBands = 1; // skip first n bands  (lower frequencies)
+  /* skip first n bands  (lower frequencies) */
+  static const short _skipLowBands = 1; 
 
-  /* Parameters for the smooth scaling ...
+  /* Parameters for the smooth scaling ... 
+   * (see comment on smoothMax() in this file for more details) */
+  static const short _windowSize = 8;
+  static const short _frameGroupSize = 8;
+
+  /* Variables for the smooth scaling */
+  double _previousValues[_windowSize]; 
+  double _previousSum; 
+  short _count; 
+
+
+
+  #ifndef NDEBUG
+  /* Timing */
+  long _t0;
+  #endif
+
+
+  /* Helper functions (do not export) */
+  double maxv(double *data, uint8_t size);
+
+  /* Smooth scaling ...
    *
    * The vertical scale of the graph adjusted dynamically based on a
    * maximum value which depends on the average maxima computed over a
@@ -74,29 +97,11 @@ class FFT_For_ESP8266 {
    * result in more abrut changes of the scaling which can be
    * noticeable.
    */
-  static const short _windowSize = 4;
-  static const short _frameGroupSize = 16;
-
-  double _previousValues[_windowSize]; 
-  double _previousSum; 
-  short _count; 
-
-
-
-  #ifndef NDEBUG
-  long _t0;
-  #endif
-
-
-  /* Helper functions (do not export) */
-  double maxv(double *data, uint8_t size);
-
-  // return max( max(current_frame), avg(max(passed_n_frames)) ) 
   double smoothMax(double *data, uint8_t size); 
   void startSampling();
   void printSamplingInfo(double *data, uint8_t size);
   void printVector(double *vData, uint8_t bufferSize, uint8_t scaleType);
-  uint8_t encodeBar(uint8_t val, uint8_t numRows);
+  uint8_t encodeBar(uint8_t val);
 
 
 

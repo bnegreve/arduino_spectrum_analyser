@@ -23,7 +23,7 @@ uint8_t amplitude = 50;
 
 FFT_For_ESP8266::FFT_For_ESP8266(short analogPin, int numSamples,
 				 int displayWidth, int displayHeight,
-				 int numLines, int numBars, int barWidth):
+				 int numBars, int numLines, int barWidth, int skipCol):
   _analogPin(analogPin), 
   _numSamples(numSamples), 
   _displayWidth(displayWidth), 
@@ -31,18 +31,32 @@ FFT_For_ESP8266::FFT_For_ESP8266(short analogPin, int numSamples,
   _numBars(numBars),
   _numLines(numLines),
   _barWidth(barWidth), 
+  _skipCol(skipCol),
   _fft(arduinoFFT()),
   _previousValues({0}), 
   _previousSum(0), 
   _count(0){
 
-  // TODO add skipLine
   if(numBars == 0)
-    _numBars = displayWidth / barWidth;
+    // maximize the number of bars
+    _numBars = (_displayWidth + skipCol) / (_barWidth + _skipCol); 
 
+  Serial.println(_numBars); 
+      
   if(numLines == 0)
     _numLines = displayHeight; 
 
+
+  if(_numBars * _barWidth + (_numBars - 1) * _skipCol  <= _displayWidth){
+    Serial.print("Error : cannot fit ");
+    Serial.print( _numBars );
+    Serial.print(" with "); 
+    Serial.print(_skipCol); 
+    Serial.print(" blanks in between, in  ");
+    Serial.print(_displayWidth);
+    Serial.println(" cols.");
+  }
+    
   assert(_numBars * _barWidth <= _displayWidth); 
   assert(_numLines <= _displayHeight);
 
@@ -97,9 +111,10 @@ void FFT_For_ESP8266::buildGraph(uint8_t *out, double *data){
 
   int numBands = _numSamples / 2 - _skipLowBands; 
   
-  double scalingFactor = (_numLines + 1) / smoothMax(data, numBands);  // used to bring all values back in the
-                                // interval [0 - _numLines] (inclusive because
-                                // we can display 9 distinct values with 8 leds.)
+  double scalingFactor = (_numLines + 1) / smoothMax(data + _skipLowBands, numBands);
+  // used to bring all values back in the
+  // interval [0 - _numLines] (inclusive because
+  // we can display 9 distinct values with 8 leds.)
 
   /* Loop through display columns */
   for(int i = 0; i < _numBars; i++){
@@ -124,9 +139,18 @@ void FFT_For_ESP8266::buildGraph(uint8_t *out, double *data){
     Serial.println();
     #endif
 
-    for(uint8_t j = i * _barWidth; j < (i+1) * _barWidth; j++){
-      out[j] = encodeBar(barHeight * scalingFactor, _numLines);
+    short colStart = i * (_barWidth + _skipCol);
+    short colEnd = i * (_barWidth + _skipCol) + _barWidth; 
+    output_t outVal = encodeBar(barHeight * scalingFactor); 
+
+    short j; 
+    for(j = colStart ; j < colEnd; j++){
+      out[j] = outVal;
     }
+
+    if( i != _numBars - 1 ) // if not the last bar add blank
+      for(; j < colEnd + _skipCol; j++)
+	out[j] = encodeBar(0);
   }
 }
 
@@ -155,7 +179,7 @@ void FFT_For_ESP8266::printGraph(uint8_t *graphData){
 }
 
 
-uint8_t FFT_For_ESP8266::encodeBar(uint8_t val, uint8_t _numLines){
+uint8_t FFT_For_ESP8266::encodeBar(uint8_t val){
 
   if(val >= _numLines) {
     // Serial.println((1<<_numLines) - 1, HEX);
