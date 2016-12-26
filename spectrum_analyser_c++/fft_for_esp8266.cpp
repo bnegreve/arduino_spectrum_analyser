@@ -41,28 +41,32 @@ FFT_For_ESP8266::FFT_For_ESP8266(short analogPin, int numSamples,
     // maximize the number of bars
     _numBars = (_displayWidth + skipCol) / (_barWidth + _skipCol); 
 
-  Serial.println(_numBars); 
-      
   if(numLines == 0)
     _numLines = displayHeight; 
 
-
-  if(_numBars * _barWidth + (_numBars - 1) * _skipCol  <= _displayWidth){
-    Serial.print("Error : cannot fit ");
+  #ifndef NDEBUG
+  
+    Serial.print("Display:  ");
     Serial.print( _numBars );
+    Serial.print(" bars of size ");
+    Serial.print(_barWidth);
     Serial.print(" with "); 
     Serial.print(_skipCol); 
-    Serial.print(" blanks in between, in  ");
-    Serial.print(_displayWidth);
-    Serial.println(" cols.");
-  }
+    Serial.print(" blanks in between each bar.");
+    Serial.println(); 
+     
+    if(_numBars * _barWidth + (_numBars - 1) * _skipCol  > _displayWidth){
+      Serial.print("Error : The graph does not fit in the screen.");
+      assert(false); 
+    }
+#endif 
     
-  assert(_numBars * _barWidth <= _displayWidth); 
-  assert(_numLines <= _displayHeight);
-
-  /* output_t should be big enough to store one column stored as zeros and ones */
-  assert(sizeof(output_t) * 8 >= log(_displayHeight) / log(2));
-  assert(_numBars <= _numSamples / 2); 
+    assert(_numLines <= _displayHeight);
+    
+    /* output_t should be big enough to store one column stored as zeros and ones */
+    assert(sizeof(output_t) * 8 >= log(_displayHeight) / log(2));
+    assert(_numBars <= _numSamples / 2);
+    
 }
 
 void FFT_For_ESP8266::sampleFromADC(double *data){
