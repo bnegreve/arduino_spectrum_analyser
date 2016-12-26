@@ -23,7 +23,7 @@ void setup()
 void loop() 
 {
 
-  FFT_For_ESP8266 fft(48, 8, 0, 128);
+  FFT_For_ESP8266 fft(0, 128, 48, 8);
 
   for(;;){
 
@@ -32,10 +32,10 @@ void loop()
     uint8_t bars[48] = {0}; 
     fft.sampleFromADC(data);
     fft.computeFFT(data, dataImg); 
-    fft.buildGraph(bars, data, 8, 48, 1);
-    fft.printGraph(bars, 8, 48);
+    fft.buildGraph(bars, data);
+    fft.printGraph(bars);
 
-    delay(100);
+    delay(1000);
   }
   
 

@@ -9,13 +9,17 @@
 
 #include "Arduino.h"
 
-#define NDEBUG // Uncomment for production
+//#define NDEBUG // Uncomment for production
 
 class FFT_For_ESP8266 {
   public:
 
+  typedef uint8_t output_t; 
+
   /* ctor */
-  FFT_For_ESP8266(int displayWidth, int displayHeight, short analogPin, int numSamples); 
+  FFT_For_ESP8266(short analogPin, int numSamples,
+		  int displayWidth, int displayHeight, int numBars = 0, 
+		  int numLines = 0, int barWidth = 1); 
 
   /* Main functions */
   void sampleFromADC(double *data);
@@ -27,22 +31,25 @@ class FFT_For_ESP8266 {
      - The total number of columns in the graph is numCols * colWidth.
      - numRows should be 8 for a display with 8 leds
   */
-  void buildGraph(uint8_t *out, double *data, uint8_t numRows, uint8_t numCols, uint8_t colWidth);
+  void buildGraph(uint8_t *out, double *data);
 
   /* Print the output of build graph on Serial. Warning totalNumCols is numCols * colWidth (not just numCols).
      Does nothing if NDEBUG is defined
   */
-  void printGraph(uint8_t *graphData, uint8_t numRows, uint8_t totalNumCols);
+  void printGraph(uint8_t *graphData);
 
 
   private:
   
 
 
-  const int _displayWidth;
-  const int _displayHeight;
   const short _analogPin;
   const int _numSamples; 
+  const int _displayWidth; 
+  const int _displayHeight;
+  int _numBars; 
+  int _numLines; 
+  int _barWidth; 
   arduinoFFT _fft; 
 
   static const short _skipLowBands = 1; // skip first n bands  (lower frequencies)

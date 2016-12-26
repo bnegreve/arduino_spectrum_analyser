@@ -21,17 +21,34 @@ uint8_t amplitude = 50;
 
 
 
-FFT_For_ESP8266::FFT_For_ESP8266(int displayWidth, int displayHeight,
-				 short analogPin, int numSamples):
-  _displayWidth(displayWidth), 
-  _displayHeight(displayHeight),
+FFT_For_ESP8266::FFT_For_ESP8266(short analogPin, int numSamples,
+				 int displayWidth, int displayHeight,
+				 int numLines, int numBars, int barWidth):
   _analogPin(analogPin), 
   _numSamples(numSamples), 
+  _displayWidth(displayWidth), 
+  _displayHeight(displayHeight),
+  _numBars(numBars),
+  _numLines(numLines),
+  _barWidth(barWidth), 
   _fft(arduinoFFT()),
   _previousValues({0}), 
   _previousSum(0), 
   _count(0){
 
+  // TODO add skipLine
+  if(numBars == 0)
+    _numBars = displayWidth / barWidth;
+
+  if(numLines == 0)
+    _numLines = displayHeight; 
+
+  assert(_numBars * _barWidth <= _displayWidth); 
+  assert(_numLines <= _displayHeight);
+
+  /* output_t should be big enough to store one column stored as zeros and ones */
+  assert(sizeof(output_t) * 8 >= log(_displayHeight) / log(2));
+  assert(_numBars <= _numSamples / 2); 
 }
 
 void FFT_For_ESP8266::sampleFromADC(double *data){
@@ -69,25 +86,25 @@ void FFT_For_ESP8266::computeFFT(double *data, double *dataImg){
 
   #ifndef NDEBUG
   Serial.println("Computed magnitudes:");
-  printVector(data, (_numSamples >> 1), SCL_FREQUENCY);
+  //  printVector(data, (_numSamples >> 1), SCL_FREQUENCY);
   #endif
 
 }
 
-void FFT_For_ESP8266::buildGraph(uint8_t *out, double *data, uint8_t numRows, uint8_t numCols, uint8_t colWidth){
-  assert(numRows <= _displayHeight);
-  assert(numCols * colWidth <= _displayWidth);
+void FFT_For_ESP8266::buildGraph(uint8_t *out, double *data){
+  assert(_numLines <= _displayHeight);
+  assert(_numBars * _barWidth <= _displayWidth);
 
   int numBands = _numSamples / 2 - _skipLowBands; 
   
-  double scalingFactor = (numRows + 1) / avgMax(data, numBands);  // used to bring all values back in the
-                                // interval [0 - numRows] (inclusive because
+  double scalingFactor = (_numLines + 1) / avgMax(data, numBands);  // used to bring all values back in the
+                                // interval [0 - _numLines] (inclusive because
                                 // we can display 9 distinct values with 8 leds.)
 
   /* Loop through display columns */
-  for(int i = 0; i < numCols; i++){
-    uint8_t bandStart = ((float)i / numCols * numBands) + _skipLowBands; 
-    uint8_t bandEnd = ((float)(i+1) / numCols * numBands) + _skipLowBands;
+  for(int i = 0; i < _numBars; i++){
+    uint8_t bandStart = ((float)i / _numBars * numBands) + _skipLowBands; 
+    uint8_t bandEnd = ((float)(i+1) / _numBars * numBands) + _skipLowBands;
 
     double barHeight = 0;
     for(uint8_t j = bandStart; j < bandEnd; j++){
@@ -107,26 +124,23 @@ void FFT_For_ESP8266::buildGraph(uint8_t *out, double *data, uint8_t numRows, ui
     Serial.println();
     #endif
 
-    for(uint8_t j = i * colWidth; j < (i+1) * colWidth; j++){
-      out[j] = encodeBar(barHeight * scalingFactor, numRows);
+    for(uint8_t j = i * _barWidth; j < (i+1) * _barWidth; j++){
+      out[j] = encodeBar(barHeight * scalingFactor, _numLines);
     }
   }
 }
 
-void FFT_For_ESP8266::printGraph(uint8_t *graphData, uint8_t numRows, uint8_t totalNumCols){
+void FFT_For_ESP8266::printGraph(uint8_t *graphData){
   //#ifndef NDEBUG
-  assert(totalNumCols <= _displayWidth);
-  assert(numRows <= _displayHeight);
-
   Serial.println("--------------- spectrum analyser input-------------------");
-  for(int i = 0; i < totalNumCols; i++){
+  for(int i = 0; i < _displayWidth; i++){
     Serial.print(graphData[i], HEX);
   }
   Serial.println();
 
   Serial.println("------------------ spectrum analyser ---------------------");
-  for(int i = numRows - 1 ; i >= 0; i--){
-    for(int j = 0; j < totalNumCols; j++){
+  for(int i = _displayHeight - 1 ; i >= 0; i--){
+    for(int j = 0; j < _displayWidth; j++){
       if( graphData[j] & (1<<i) )
           Serial.print("#");
       else
@@ -134,18 +148,18 @@ void FFT_For_ESP8266::printGraph(uint8_t *graphData, uint8_t numRows, uint8_t to
     }
     Serial.println();
   }
-  for(int i = 0; i < totalNumCols; i++)
+  for(int i = 0; i < _displayWidth; i++)
     Serial.print("-");
   Serial.println();
   //#endif
 }
 
 
-uint8_t FFT_For_ESP8266::encodeBar(uint8_t val, uint8_t numRows){
+uint8_t FFT_For_ESP8266::encodeBar(uint8_t val, uint8_t _numLines){
 
-  if(val >= numRows) {
-    // Serial.println((1<<numRows) - 1, HEX);
-    return (1<<numRows) - 1; // all led on.
+  if(val >= _numLines) {
+    // Serial.println((1<<_numLines) - 1, HEX);
+    return (1<<_numLines) - 1; // all led on.
   }
 
   uint8_t res = 0;
@@ -189,8 +203,10 @@ double FFT_For_ESP8266::avgMax(double *data, uint8_t size){
     // set new value
     _previousValues[ _windowSize - 1 ] = max(_previousValues[ _windowSize - 1 ],
 					     maxv(data, size));
+    // printVector(_previousValues, _windowSize, SCL_INDEX); 
+ 
     double sum = _previousSum + _previousValues[ _windowSize - 1 ];
-    //    Serial.println(sum / _windowSize ); 
+    Serial.println(sum / _windowSize ); 
     return sum / _windowSize; 
 }
 
