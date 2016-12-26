@@ -154,7 +154,7 @@ void FFT_For_ESP8266::buildGraph(output_t *out, double *data){
   }
 }
 
-void FFT_For_ESP8266::printGraph(uint8_t *graphData){
+void FFT_For_ESP8266::printGraph(output_t *graphData){
   //#ifndef NDEBUG
   Serial.println("--------------- spectrum analyser input-------------------");
   for(int i = 0; i < _displayWidth; i++){
