@@ -63,25 +63,24 @@ class FFT_For_ESP8266 {
   int _barWidth; 
   int _skipCol; 
   arduinoFFT _fft; 
+  double *_data; 
+  double *_dataImg; 
 
   /* skip first n bands  (lower frequencies) */
   static const short _skipLowBands = 1; 
 
-  /* Parameters for the smooth scaling ... 
+  /* Parameters for the smooth y scaling ... 
    * (see comment on smoothMax() in this file for more details) */
   static const short _windowSize = 8;
   static const short _frameGroupSize = 8;
 
-  /* Variables for the smooth scaling */
+  /* Variables for the smooth y scaling */
   double _previousValues[_windowSize]; 
   double _previousSum; 
-  short _count; 
+  short _count;
 
- public:
-
-  double *_data; 
-  double *_dataImg; 
-
+  /* Parameters for x log scaling */
+  double _scalePower; 
 
   #ifndef NDEBUG
   /* Timing */
@@ -117,9 +116,20 @@ class FFT_For_ESP8266 {
   void printSamplingInfo(double *data, int size);
   void printVector(double *vData, int bufferSize, uint8_t scaleType);
   output_t encodeBar(output_t val);
+  /* convert linear scale to log scale 
+   *
+   * The value of xscale depends on _scalePower, which is set to
+   * garantee that two different bars will fetch data from two
+   * distinct bands (see setXScale())*/
+  double xscale(double val);
+  /* Use to compute the exponent for the horizontal logarithmic scale (see xscale()) 
+   * Return the maximal exponent that garantees that two different bars will fetch data from two distinct bands
+   * I.e. that (1/bars)^_scalePower * bands >= 1
+   */
+  double setXScale(int numBands, int numBars); 
+  
 
 
-
-  };
+};
 
 #endif

@@ -14,6 +14,7 @@ double signalFrequency = 2000;
 double samplingFrequency = 5000;
 uint8_t amplitude = 50;
 
+
 /* Misc values for printVector */
 #define SCL_INDEX 0x00
 #define SCL_TIME 0x01
@@ -67,9 +68,12 @@ FFT_For_ESP8266::FFT_For_ESP8266(short analogPin, int numSamples,
     assert(sizeof(output_t) * 8 >= log(_displayHeight) / log(2));
     assert(_numBars <= _numSamples / 2);
 
+    int numBands = _numSamples / 2 - _skipLowBands; 
+    _scalePower = setXScale(numBands, _numBars); 
+
     _data = new double[_numSamples];
     _dataImg = new double[_numSamples];
-    
+
     
 }
 
@@ -136,9 +140,9 @@ void FFT_For_ESP8266::buildGraph(output_t *out){
 
   /* Loop through display columns */
   for(int i = 0; i < _numBars; i++){
-    int bandStart = ((float)i / _numBars * numBands) + _skipLowBands; 
-    int bandEnd = ((float)(i+1) / _numBars * numBands) + _skipLowBands;
-
+    int bandStart = xscale((float)i / _numBars) * numBands + _skipLowBands; 
+    int bandEnd = xscale((float)(i+1) / _numBars) * numBands + _skipLowBands;
+    
     double barHeight = 0;
     for(int j = bandStart; j < bandEnd; j++){
       /* take the maximum value of all bands displayed by this column */
@@ -315,4 +319,11 @@ void FFT_For_ESP8266::printVector(double *vData, int bufferSize, uint8_t scaleTy
 #endif
 }
 
+double FFT_For_ESP8266::setXScale(int numBands, int numBars){
+  return log( numBands ) / log(_numBars); 
+}
+
+double FFT_For_ESP8266::xscale(double val){
+  return pow(val, _scalePower); 
+}
 
