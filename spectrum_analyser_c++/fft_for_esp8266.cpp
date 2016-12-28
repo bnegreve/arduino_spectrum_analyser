@@ -1,4 +1,3 @@
-#include <arduinoFFT.h>
 #include <assert.h>
 
 #include "fft_for_esp8266.h"

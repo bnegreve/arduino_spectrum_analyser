@@ -7,6 +7,7 @@
 #ifndef FFT_For_ESP8266_h
 #define FFT_For_ESP8266_h
 
+#include <arduinoFFT.h>
 #include "Arduino.h"
 
 //#define NDEBUG // Uncomment for production
