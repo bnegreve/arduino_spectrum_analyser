@@ -1,9 +1,40 @@
-These are test programs to do sound spectral analysis on arduino using standard fft and  fht libraries.
+Sound spectral analysis on arduino using standard fft and  fht libraries.
 
-Analog data is picked up from ADC pin A0. The resulting spectrum is visible ASCII stylel on the Serial output. 
+Tested on arduino uno, and on esp8266. 
+
+spectrum_analyser_c++
+=====================
+
+
+Driver for LED Screen. (Main project, the two other dirs are libraries tests)
+
+For production use, uncomment out NDEBUG in .h file (faster!). 
+
+![spectrum analyser](https://raw.githubusercontent.com/username/projectname/branch/path/to/img.png)
+
+Dependencies:
+-------------
+https://github.com/kosme/arduinoFFT
+
+Compile/run:
+------------
+
+Requires arduino-mk to compile with make (sudo apt-get install arduino-mk). 
+Also compiles with the arduino software. 
+
+Move to the fft directory
+$ cd spectrum_analyser_c++
+
+To compile type
+$ make
+
+To view output on serial
+$ make console
 
 fft
 ===
+
+Analog data is picked up from ADC pin A0. The resulting spectrum is visible ASCII stylel on the Serial output. 
 
 Dependencies:
 -------------
@@ -26,6 +57,8 @@ $ make monitor
 
 fht
 ===
+
+Alternative library, got better results with fft. 
 
 Dependencies:
 -------------
