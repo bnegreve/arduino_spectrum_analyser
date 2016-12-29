@@ -78,7 +78,7 @@ class FFT_For_ESP8266 {
   int *_previousFrame; 
 
   /* skip first n bands  (lower frequencies) */
-  static const short _skipLowBands = 2; 
+  static const short _skipLowBands = 0; 
 
   /* Parameters for the smooth y scaling ... 
    * (see comment on smoothMax() in this file for more details) */

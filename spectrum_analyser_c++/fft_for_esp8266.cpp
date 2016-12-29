@@ -74,9 +74,14 @@ FFT_For_ESP8266::FFT_For_ESP8266(short analogPin, int numSamples,
     _xScaleBar0 = ceil(_numBars * _xScaleThreshold);
 
     /* Bar falling */
-    _previousFrame = new int[ _numSamples / 2 ];
-    memset(_previousFrame, 0, sizeof(int) * _numBars ); 
-    
+    _previousFrame = new int[ _numBars ];
+    if(_previousFrame == NULL){
+      Serial.println("Error: out of memory"); 
+    }
+    //    memset(_previousFrame, 0, sizeof(_previousFrame[0]) * _numBars );     
+
+
+
 }
 
 void FFT_For_ESP8266::sampleFromADC(){
@@ -133,23 +138,37 @@ void FFT_For_ESP8266::buildGraph(output_t *out){
   assert(_numLines <= _displayHeight);
   assert(_numBars * _barWidth <= _displayWidth);
 
-  int numBands = _numSamples / 2 - _skipLowBands; 
-  
+  int numBands = _numSamples / 2 - _skipLowBands;
+  Serial.println("BLAAAAAAAAAAAAAAAAA"); 
+  Serial.println(numBands); 
+  Serial.println(_numSamples); 
+  Serial.println(_skipLowBands); 
+
+
   double scalingFactor = (_numLines + 1) / smoothMax(_data + _skipLowBands, numBands);
+
   // used to bring all values back in the
   // interval [0 - _numLines] (inclusive because
   // we can display 9 distinct values with 8 leds.)
 
   /* Loop through display columns */
   for(int i = 0; i < _numBars; i++){
+  Serial.println("BLAAAH1");
+  Serial.println(numBands); 
+
     int bandStart = barsToBands(i, _numBars, numBands) + _skipLowBands; 
     int bandEnd = barsToBands(i + 1, _numBars, numBands) + _skipLowBands; 
+
+  Serial.println("BLAAAH1.1");
+  Serial.println(numBands); 
+
 
     double barHeight = 0;
     for(int j = bandStart; j < bandEnd; j++){
       /* take the maximum value of all bands displayed by this column */
       barHeight = max(_data[j],  barHeight);
     }
+
 
     #ifndef NDEBUG
     Serial.print("Col ");
@@ -166,11 +185,25 @@ void FFT_For_ESP8266::buildGraph(output_t *out){
     int colStart = i * (_barWidth + _skipCol);
     int colEnd = i * (_barWidth + _skipCol) + _barWidth; 
 
+  Serial.println("BLAAAH1.2");
+  Serial.println(numBands); 
+
+  Serial.println(i); 
+  Serial.println(_numBars); 
+
     double x = barHeight * scalingFactor;
     if(x < _previousFrame[i]) 
       x = _previousFrame[i] - 1; 
     _previousFrame[i] = x; 
+
+
+  Serial.println("BLAAAH1.3");
+  Serial.println(numBands); 
+
+
     output_t outVal = encodeBar(x); 
+
+
 
     int j; 
     for(j = colStart ; j < colEnd; j++){
@@ -181,6 +214,9 @@ void FFT_For_ESP8266::buildGraph(output_t *out){
       for(; j < colEnd + _skipCol; j++){
 	out[j] = encodeBar(0);
       }
+    // Serial.println("BLAAAH1.4");
+    // Serial.println(numBands); 
+
   }
 }
 
@@ -242,6 +278,10 @@ double FFT_For_ESP8266::maxv(double *data, int size){
 double FFT_For_ESP8266::smoothMax(double *data, int size){
   /* every 16 frames, shift all values by one, drop the oldest value and set the new value to 0 */
 
+  Serial.println("BLAAAH15");
+  Serial.println(size); 
+
+
   if( _count++ % _frameGroupSize  == 0) {
 
     // Substract oldest max, add newst max
@@ -272,6 +312,10 @@ double FFT_For_ESP8266::smoothMax(double *data, int size){
   Serial.print("Smoothmax: ");
   Serial.println(max(avgMax, currentMax)); 
   #endif 
+
+  Serial.println("BLAAAH16");
+  Serial.println(size); 
+
   return max(avgMax, currentMax);  
 }
 
@@ -331,21 +375,53 @@ void FFT_For_ESP8266::printVector(double *vData, int bufferSize, uint8_t scaleTy
 
 int FFT_For_ESP8266::barsToBands(int barIndex, int numBars, int numBands){
 
+  Serial.println("BLAAAH2");
+  Serial.println(numBands); 
+
   /* linear scale for the first 10% of the frequency spectrum */
   float spectrumPos = (float)barIndex / numBars; 
+
+  int _b0Log = 8; 
   
-  if( spectrumPos <= _xScaleThreshold){
+  /* 1 bars maps to one band for first bars (lower frequencies) */
+  if( barIndex <= _b0Log){ 
+    Serial.print("LIN SCALE Bar/band index "); 
+    Serial.println(barIndex); 
     return barIndex; 
   }
+  else if ( barIndex == numBars ){
+    return numBands;
+  }
+  /* Log scale for remaining bars 
+   * I.e. maps on bar on n bands  with n growing exponentially with the bar index
+   */
   else{
-    //    Serial.println("Log "); 
-    // Serial.print("Scale "); 
-    // Serial.println(scale); 
-    // Serial.print("S pos "); 
-    // Serial.println(spectrumPos); 
-    // Serial.print("Power ");
-    // Serial.println(pow(spectrumPos - 0.1, power) * scale); 
-    return (pow(spectrumPos - _xScaleThreshold, _xScalePower) * _xScaleFactor) *
-      (numBands - _xScaleBar0) + _xScaleBar0; 
+    int remainingBars = numBars - _b0Log; 
+    int remainingBands = numBands - _b0Log;
+    /* Ideal base */ 
+    double base = pow(2, (log(remainingBands) / log(2)) / remainingBars); 
+    /* min base, garantees that the diff between two bars is at least one band */
+    double minBase = log(remainingBands) / log(remainingBars); 
+    base = base < minBase ? minBase : base; 
+
+    
+    double exponent = barIndex - _b0Log; 
+    int res =  _b0Log + pow( base , exponent ); 
+
+    Serial.print("LOG SCALE barindex  ");
+    Serial.print(barIndex); 
+    Serial.print(" base "); 
+    Serial.print(base);
+    Serial.print(" minbase "); 
+    Serial.print(minBase);
+    Serial.print(" exponent ");
+    Serial.print( exponent );
+    Serial.print(" pow ");
+    Serial.print(pow(base, exponent));
+    Serial.print(" result "); 
+    Serial.println(res); 
+
+    return res; 
   }
 }
+
