@@ -41,17 +41,17 @@ FFT_For_ESP8266::FFT_For_ESP8266(short analogPin, int numSamples,
 
   #ifndef NDEBUG
   
-    Serial.print("Display:  ");
+    Serial.print(F("Display:  "));
     Serial.print( _numBars );
-    Serial.print(" bars of size ");
+    Serial.print(F(" bars of size "));
     Serial.print(_barWidth);
-    Serial.print(" with "); 
+    Serial.print(F(" with ")); 
     Serial.print(_skipCol); 
-    Serial.print(" blanks in between each bar.");
+    Serial.print(F(" blanks in between each bar."));
     Serial.println(); 
      
     if(_numBars * _barWidth + (_numBars - 1) * _skipCol  > _displayWidth){
-      Serial.print("Error : The graph does not fit in the screen.");
+      Serial.print(F("Error : The graph does not fit in the screen."));
       assert(false); 
     }
 #endif 
@@ -171,13 +171,13 @@ void FFT_For_ESP8266::buildGraph(output_t *out){
 
 
     #ifndef NDEBUG
-    Serial.print("Col ");
+    Serial.print(F("Col "));
     Serial.print(i);
-    Serial.print(" : Band from ");
+    Serial.print(F(" : Band from "));
     Serial.print(bandStart);
-    Serial.print(" to ");
+    Serial.print(F(" to "));
     Serial.print(bandEnd);
-    Serial.print(": ");
+    Serial.print(F(": "));
     Serial.print(barHeight);
     Serial.println();
     #endif
@@ -232,14 +232,14 @@ void FFT_For_ESP8266::printGraph(output_t *graphData){
   for(int i = _displayHeight - 1 ; i >= 0; i--){
     for(int j = 0; j < _displayWidth; j++){
       if( graphData[j] & (1<<i) )
-          Serial.print("#");
+          Serial.print(F("#"));
       else
-          Serial.print(" ");
+          Serial.print(F(" "));
     }
     Serial.println();
   }
   for(int i = 0; i < _displayWidth; i++)
-    Serial.print("-");
+    Serial.print(F("-"));
   Serial.println();
   //#endif
 }
@@ -309,7 +309,7 @@ double FFT_For_ESP8266::smoothMax(double *data, int size){
 
 
   #ifndef NDEBUG
-  Serial.print("Smoothmax: ");
+  Serial.print(F("Smoothmax: "));
   Serial.println(max(avgMax, currentMax)); 
   #endif 
 
@@ -330,16 +330,16 @@ void FFT_For_ESP8266::printSamplingInfo(double *data, int size){
 #ifndef NDEBUG
     float t = (micros() - _t0) / 1.0E3; // time (ms)
 
-    Serial.print("Sampling time : ");
+    Serial.print(F("Sampling time : "));
     Serial.println(t);
 
-    Serial.print("Time per sample (ms) : ");
+    Serial.print(F("Time per sample (ms) : "));
     Serial.println(t/size);
 
-    Serial.print("Sampling frequency (hz) : ");
+    Serial.print(F("Sampling frequency (hz) : "));
     Serial.println((1 / (t/1E3)) * size);
 
-    Serial.print("Max ADC value: ");
+    Serial.print(F("Max ADC value: "));
     Serial.println(maxv(data, size));
 #endif
 }
@@ -365,7 +365,7 @@ void FFT_For_ESP8266::printVector(double *vData, int bufferSize, uint8_t scaleTy
   break;
     }
     Serial.print(abscissa, 6);
-    Serial.print(" ");
+    Serial.print(F(" "));
     Serial.print(vData[i], 4);
     Serial.println();
   }
@@ -385,7 +385,7 @@ int FFT_For_ESP8266::barsToBands(int barIndex, int numBars, int numBands){
   
   /* 1 bars maps to one band for first bars (lower frequencies) */
   if( barIndex <= _b0Log){ 
-    Serial.print("LIN SCALE Bar/band index "); 
+    Serial.print(F("LIN SCALE Bar/band index ")); 
     Serial.println(barIndex); 
     return barIndex; 
   }
@@ -408,17 +408,17 @@ int FFT_For_ESP8266::barsToBands(int barIndex, int numBars, int numBands){
     double exponent = barIndex - _b0Log; 
     int res =  _b0Log + pow( base , exponent ); 
 
-    Serial.print("LOG SCALE barindex  ");
+    Serial.print(F("LOG SCALE barindex  "));
     Serial.print(barIndex); 
-    Serial.print(" base "); 
+    Serial.print(F(" base ")); 
     Serial.print(base);
-    Serial.print(" minbase "); 
+    Serial.print(F(" minbase ")); 
     Serial.print(minBase);
-    Serial.print(" exponent ");
+    Serial.print(F(" exponent "));
     Serial.print( exponent );
-    Serial.print(" pow ");
+    Serial.print(F(" pow "));
     Serial.print(pow(base, exponent));
-    Serial.print(" result "); 
+    Serial.print(F(" result ")); 
     Serial.println(res); 
 
     return res; 
