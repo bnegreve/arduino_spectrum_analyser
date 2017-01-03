@@ -62,23 +62,16 @@ FFT_For_ESP8266::FFT_For_ESP8266(short analogPin, int numSamples,
     assert(sizeof(output_t) * 8 >= log(_displayHeight) / log(2));
     assert(_numBars <= _numSamples / 2);
 
-    int numBands = _numSamples / 2 - _skipLowBands; 
-
     if(buffer == NULL){
       _data = new double[_numSamples];
     }
     _dataImg = new double[_numSamples];
     
-    /* set parameters for the non linear x scale */
-    _xScaleFactor = 1 / pow(1 - _xScaleThreshold, _xScalePower);
-    _xScaleBar0 = ceil(_numBars * _xScaleThreshold);
+    setXLogScale(); 
 
     /* Bar falling */
     _previousFrame = new int[ _numBars ];
-    if(_previousFrame == NULL){
-      Serial.println("Error: out of memory"); 
-    }
-    //    memset(_previousFrame, 0, sizeof(_previousFrame[0]) * _numBars );     
+    memset(_previousFrame, 0, sizeof(_previousFrame[0]) * _numBars );     
 
 
 
@@ -108,19 +101,19 @@ void FFT_For_ESP8266::computeFFT(){
   memset(_dataImg, 0, sizeof(double) * _numSamples); 
 
   _fft.Windowing(_data, _numSamples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);  /* Weigh _data */
-  //Serial.println("Weighed _data:");
+  //Serial.println(F("Weighed _data:"));
   //printVector(vReal, _numSamples, SCL_TIME);
 
   _fft.Compute(_data, _dataImg, _numSamples, FFT_FORWARD); /* Compute FFT */
-  //Serial.println("Computed Real values:");
+  //Serial.println(F("Computed Real values:"));
   //printVector(vReal, _numSamples, SCL_INDEX);
-  //Serial.println("Computed Imaginary values:");
+  //Serial.println(F("Computed Imaginary values:"));
   //printVector(_dataImg, _numSamples, SCL_INDEX);
 
   _fft.ComplexToMagnitude(_data, _dataImg, _numSamples); /* Compute magnitudes */
 
   #ifndef NDEBUG
-  Serial.println("Computed magnitudes:");
+  Serial.println(F("Computed magnitudes:"));
   //  printVector(_data, (_numSamples >> 1), SCL_FREQUENCY);
   #endif
 
@@ -139,11 +132,6 @@ void FFT_For_ESP8266::buildGraph(output_t *out){
   assert(_numBars * _barWidth <= _displayWidth);
 
   int numBands = _numSamples / 2 - _skipLowBands;
-  Serial.println("BLAAAAAAAAAAAAAAAAA"); 
-  Serial.println(numBands); 
-  Serial.println(_numSamples); 
-  Serial.println(_skipLowBands); 
-
 
   double scalingFactor = (_numLines + 1) / smoothMax(_data + _skipLowBands, numBands);
 
@@ -153,15 +141,9 @@ void FFT_For_ESP8266::buildGraph(output_t *out){
 
   /* Loop through display columns */
   for(int i = 0; i < _numBars; i++){
-  Serial.println("BLAAAH1");
-  Serial.println(numBands); 
 
     int bandStart = barsToBands(i, _numBars, numBands) + _skipLowBands; 
     int bandEnd = barsToBands(i + 1, _numBars, numBands) + _skipLowBands; 
-
-  Serial.println("BLAAAH1.1");
-  Serial.println(numBands); 
-
 
     double barHeight = 0;
     for(int j = bandStart; j < bandEnd; j++){
@@ -184,28 +166,15 @@ void FFT_For_ESP8266::buildGraph(output_t *out){
 
     int colStart = i * (_barWidth + _skipCol);
     int colEnd = i * (_barWidth + _skipCol) + _barWidth; 
-
-  Serial.println("BLAAAH1.2");
-  Serial.println(numBands); 
-
-  Serial.println(i); 
-  Serial.println(_numBars); 
-
+  
     double x = barHeight * scalingFactor;
     if(x < _previousFrame[i]) 
       x = _previousFrame[i] - 1; 
     _previousFrame[i] = x; 
 
-
-  Serial.println("BLAAAH1.3");
-  Serial.println(numBands); 
-
-
     output_t outVal = encodeBar(x); 
-
-
-
     int j; 
+
     for(j = colStart ; j < colEnd; j++){
       out[j] = outVal;
     }
@@ -214,21 +183,18 @@ void FFT_For_ESP8266::buildGraph(output_t *out){
       for(; j < colEnd + _skipCol; j++){
 	out[j] = encodeBar(0);
       }
-    // Serial.println("BLAAAH1.4");
-    // Serial.println(numBands); 
-
   }
 }
 
 void FFT_For_ESP8266::printGraph(output_t *graphData){
   //#ifndef NDEBUG
-  Serial.println("--------------- spectrum analyser input-------------------");
+  Serial.println(F("--------------- spectrum analyser input-------------------"));
   for(int i = 0; i < _displayWidth; i++){
     Serial.print(graphData[i], HEX);
   }
   Serial.println();
 
-  Serial.println("------------------ spectrum analyser ---------------------");
+  Serial.println(F("------------------ spectrum analyser ---------------------"));
   for(int i = _displayHeight - 1 ; i >= 0; i--){
     for(int j = 0; j < _displayWidth; j++){
       if( graphData[j] & (1<<i) )
@@ -278,10 +244,6 @@ double FFT_For_ESP8266::maxv(double *data, int size){
 double FFT_For_ESP8266::smoothMax(double *data, int size){
   /* every 16 frames, shift all values by one, drop the oldest value and set the new value to 0 */
 
-  Serial.println("BLAAAH15");
-  Serial.println(size); 
-
-
   if( _count++ % _frameGroupSize  == 0) {
 
     // Substract oldest max, add newst max
@@ -313,7 +275,6 @@ double FFT_For_ESP8266::smoothMax(double *data, int size){
   Serial.println(max(avgMax, currentMax)); 
   #endif 
 
-  Serial.println("BLAAAH16");
   Serial.println(size); 
 
   return max(avgMax, currentMax);  
@@ -348,7 +309,7 @@ void FFT_For_ESP8266::printSamplingInfo(double *data, int size){
 void FFT_For_ESP8266::printVector(double *vData, int bufferSize, uint8_t scaleType)
 {
 #ifndef NDEBUG
-  for (uint16_t i = 0; i < bufferSize; i++)
+  for (int i = 0; i < bufferSize; i++)
   {
     double abscissa;
     /* Print abscissa value */
@@ -374,54 +335,83 @@ void FFT_For_ESP8266::printVector(double *vData, int bufferSize, uint8_t scaleTy
 }
 
 int FFT_For_ESP8266::barsToBands(int barIndex, int numBars, int numBands){
-
-  Serial.println("BLAAAH2");
-  Serial.println(numBands); 
-
-  /* linear scale for the first 10% of the frequency spectrum */
-  float spectrumPos = (float)barIndex / numBars; 
-
-  int _b0Log = 8; 
   
   /* 1 bars maps to one band for first bars (lower frequencies) */
-  if( barIndex <= _b0Log){ 
-    Serial.print(F("LIN SCALE Bar/band index ")); 
-    Serial.println(barIndex); 
+  if( barIndex <= _startLogScale){ 
+    //    Serial.print(F("LIN SCALE Bar/band index ")); 
+    //    Serial.println(barIndex); 
     return barIndex; 
   }
-  else if ( barIndex == numBars ){
+  else if ( barIndex == numBars ){ /* save this computation */ 
     return numBands;
   }
   /* Log scale for remaining bars 
    * I.e. maps on bar on n bands  with n growing exponentially with the bar index
    */
   else{
-    int remainingBars = numBars - _b0Log; 
-    int remainingBands = numBands - _b0Log;
-    /* Ideal base */ 
-    double base = pow(2, (log(remainingBands) / log(2)) / remainingBars); 
-    /* min base, garantees that the diff between two bars is at least one band */
-    double minBase = log(remainingBands) / log(remainingBars); 
-    base = base < minBase ? minBase : base; 
+    double exponent = barIndex - _startLogScale; 
+    int res = min(  _startLogScale + pow( _logScaleBase , exponent ), // 
+		    numBands); 
 
-    
-    double exponent = barIndex - _b0Log; 
-    int res =  _b0Log + pow( base , exponent ); 
-
+#ifndef NDEBUG
     Serial.print(F("LOG SCALE barindex  "));
     Serial.print(barIndex); 
     Serial.print(F(" base ")); 
-    Serial.print(base);
-    Serial.print(F(" minbase ")); 
-    Serial.print(minBase);
+    Serial.print(_logScaleBase);
     Serial.print(F(" exponent "));
     Serial.print( exponent );
     Serial.print(F(" pow "));
-    Serial.print(pow(base, exponent));
+    Serial.print(pow(_logScaleBase, exponent));
     Serial.print(F(" result ")); 
     Serial.println(res); 
+#endif 
 
     return res; 
   }
 }
 
+void FFT_For_ESP8266::setXLogScale(uint8_t startLogScale, double base){
+  _startLogScale = startLogScale;
+  _logScaleBase = base; 
+}
+
+void FFT_For_ESP8266::setXLogScale(){
+
+  /* set start logscale  */
+
+  _startLogScale = 0.8 * _numBars;
+
+  /* guess the best log base for the scale*/ 
+
+  int numBands = _numSamples / 2 - _skipLowBands; 
+
+  int remainingBars = _numBars - _startLogScale; 
+  int remainingBands = numBands - _startLogScale;
+
+  /* Maximum base value, i.e the base such that that base^bars = bands */
+  double base = pow(2, (log(remainingBands) / log(2)) / remainingBars); 
+
+  /* min base, garantees that the diff between two bars is at least one band */
+  double minBase = log(remainingBands) / log(remainingBars); 
+
+  if(base < minBase){
+    _logScaleBase = minBase;
+    Serial.println(F("Warning: xLogScale "));
+    Serial.println(F("Cannot find a correct base for the log scale, strange bahaviours are to be expected (bars always set to zero). Change the graph parameters to fix this."));
+  }
+  else{
+    _logScaleBase = base < 2 ? base : 2 ; // Do go above base 2 for logscale
+  }
+  
+#ifndef NDEBUG
+  Serial.println(F("Log scale parameters"));
+  Serial.print(F("minbase ")); 
+  Serial.print(minBase);
+  Serial.print(F(" maxbase ")); 
+  Serial.println(base);
+  Serial.print(F(" base ")); 
+  Serial.print(_logScaleBase);
+  Serial.println(); 
+#endif 
+  
+}

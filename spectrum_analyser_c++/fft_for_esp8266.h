@@ -64,43 +64,55 @@ class FFT_For_ESP8266 {
   int _numLines; 
   int _barWidth; 
   int _skipCol; 
-  const double _xScaleThreshold = 0.2; // switch from linear to logscale at x %
-  const int _xScalePower = 2;  // base of the logarithmic x scale 
-// buffer values to avoid recomputations
-  double _xScaleFactor; 
-  int _xScaleBar0; 
-  int _xScaleNumBands0; 
-
   arduinoFFT _fft; 
   double *_data; 
   double *_dataImg; 
 
-  int *_previousFrame; 
+public: 
 
-  /* skip first n bands  (lower frequencies) */
+
+  /*****************************************/
+  /* Parameters & variables for (partial) x log scale, drives how we
+     map bars indexes to bands indexes */
+  
+  /* skip first n bands  (lower frequencies), in case of noise */
   static const short _skipLowBands = 0; 
+  
+  /* If set to 0.8, we will map one bar for one band below 80% of the
+   * scale, then switch to logscale after. 
+   * Set to one if you want full linear frequency scale. 
+   * WARNING: If the ratio bands/bars is close to one, this cannot be set too low. 
+   * Check debug messages of barsToBands() to verify that all bars are
+   * takes their values in at least one band.
+   * An issue will be issued in setXLogScale() if the ideal base of the log scale cannot be used
+   * because there are not enough bands. 
+   */
 
-  /* Parameters for the smooth y scaling ... 
-   * (see comment on smoothMax() in this file for more details) */
-  static const short _windowSize = 8;
-  static const short _frameGroupSize = 8;
+  static const int _logScaleThreshold = 0.8; 
 
-  /* Variables for the smooth y scaling */
-  double _previousValues[_windowSize]; 
-  double _previousSum; 
-  short _count;
+  /* Automatically adjust the logscale parameters (using the value _logScaleThreshold) */
+  void setXLogScale(); 
 
-  /* Parameters for x log scaling */
-  double _scalePower; 
+  /* Manually adjest the parameters for the logscale 
+   * startLogScale: switch to logscale after this bar 
+   * base: base of the logscale (see barsToBands 
+   * (_logScaleThreshold is ingored.)
+   */ 
+  void setXLogScale(uint8_t startLogScale, double base); 
 
-  #ifndef NDEBUG
-  /* Timing */
-  long _t0;
-  #endif
+private: 
+
+  /* Convert bar ids to band ids using parameters */
+  int barsToBands(int barIndex, int numBars, int numBands);  
+
+  /* Variables */
+  uint8_t _startLogScale;
+  double _logScaleBase; 
 
 
-  /* Helper functions (do not export) */
-  double maxv(double *data, int size);
+  /*****************************************/  
+  /* Parameters & variables for the y scale (amplitude), drives how we rescale the graph
+     y scale along the time */
 
   /* Smooth scaling ...
    *
@@ -123,13 +135,38 @@ class FFT_For_ESP8266 {
    * noticeable.
    */
   double smoothMax(double *data, int size); 
+
+  /*****************************************/
+  /* Parameters for the smooth y scaling ... 
+   * (see comment on smoothMax() in this file for more details) */
+  static const short _windowSize = 8;
+  static const short _frameGroupSize = 8;
+
+  /* Variables for the smooth y scaling */
+  double _previousValues[_windowSize]; 
+  double _previousSum; 
+  short _count;
+
+  /*****************************************/
+  /* Parameters & variables for bar falling. 
+   * To improve the visual effect, bars value drop smoothly when the value reset to zero */
+  int *_previousFrame; 
+
+  #ifndef NDEBUG
+  /* Timing */
+  long _t0;
+  #endif
+
+
+  /* Helper functions (do not export) */
+  double maxv(double *data, int size);
   void startSampling();
   void printSamplingInfo(double *data, int size);
   void printVector(double *vData, int bufferSize, uint8_t scaleType);
   output_t encodeBar(output_t val);
-  /* Convert bar ids to band ids (in a non linear fashion) */
-  int barsToBands(int barIndex, int numBars, int numBands);  
 
+
+  
 
 };
 
