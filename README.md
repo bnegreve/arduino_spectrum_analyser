@@ -10,7 +10,7 @@ Driver for LED Screen. (Main project, the two other dirs are libraries tests)
 
 For production use, uncomment out NDEBUG in .h file (faster!). 
 
-![spectrum analyser](https://raw.githubusercontent.com/username/projectname/branch/path/to/img.png)
+![spectrum analyser](https://raw.githubusercontent.com/bnegreve/arduino_spectrum_analyser/master/img/sa.jpg)
 
 Dependencies:
 -------------
