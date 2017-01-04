@@ -1,14 +1,16 @@
-Sound spectral analysis on arduino using standard fft and  fht libraries.
+Sound spectral analysis on arduino. 
+Tested on arduino uno, and on an esp8266. 
 
-Tested on arduino uno, and on esp8266. 
+There are three subproject.  Spectrum_analyser_c++ is the main subproject, the two other are tests subprojects. 
 
 spectrum_analyser_c++
 =====================
 
 
-Driver for LED Screen. (Main project, the two other dirs are libraries tests)
+Driver for LED Screen. 
 
-For production use, uncomment out NDEBUG in .h file (faster!). 
+For production use, uncomment out NDEBUG in .h file (much faster!).
+Note: despite the name of the main class (FFT_For_ESP8266) this should work on most Arduinos. At least, this was tested on Uno. 
 
 ![spectrum analyser](https://raw.githubusercontent.com/bnegreve/arduino_spectrum_analyser/master/img/sa.jpg)
 
@@ -23,13 +25,13 @@ Requires arduino-mk to compile with make (sudo apt-get install arduino-mk).
 Also compiles with the arduino software. 
 
 Move to the fft directory
-$ cd spectrum_analyser_c++
+    $ cd spectrum_analyser_c++
 
 To compile type
-$ make
+    $ make
 
 To view output on serial
-$ make console
+    $ make console
 
 fft
 ===
@@ -45,14 +47,14 @@ Compile/run:
 ------------
 
 Move to the fft directory
-$ cd fft
+    $ cd fft
 
 To compile type
-$ make
+    $ make
 
 
 To view the output type
-$ make monitor
+    $ make monitor
 
 
 fht
@@ -68,14 +70,14 @@ Compile/run:
 ------------
 
 Move to the fht directory
-$ cd fht
+    $ cd fht
 
 To compile type
-$ make
+    $ make
 
 
 To view the output type
-$ make monitor
+    $ make monitor
 
 
 Known bugs: 
