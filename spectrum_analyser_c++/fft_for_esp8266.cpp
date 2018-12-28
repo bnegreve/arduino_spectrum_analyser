@@ -72,9 +72,7 @@ FFT_For_ESP8266::FFT_For_ESP8266(short analogPin, int numSamples,
     
     /* set parameters for the non linear x scale */
     _xScaleFactor = 1 / pow(1 - _xScaleThreshold, _xScalePower);
-    _xScaleBar0 = ceil(numBars * _xScaleThreshold);
-    _xScaleNumBands0 -= _xScaleBar0; 
-
+    _xScaleBar0 = ceil(_numBars * _xScaleThreshold);
 }
 
 void FFT_For_ESP8266::sampleFromADC(){
@@ -335,6 +333,6 @@ int FFT_For_ESP8266::barsToBands(int barIndex, int numBars, int numBands){
     // Serial.print("Power ");
     // Serial.println(pow(spectrumPos - 0.1, power) * scale); 
     return (pow(spectrumPos - _xScaleThreshold, _xScalePower) * _xScaleFactor) *
-      numBands  + _xScaleNumBands0; 
+      (numBands - _xScaleBar0) + _xScaleBar0; 
   }
 }
