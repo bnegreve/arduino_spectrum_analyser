@@ -74,6 +74,8 @@ class FFT_For_ESP8266 {
   double *_data; 
   double *_dataImg; 
 
+  int *_previousFrame; 
+
   /* skip first n bands  (lower frequencies) */
   static const short _skipLowBands = 2; 
 

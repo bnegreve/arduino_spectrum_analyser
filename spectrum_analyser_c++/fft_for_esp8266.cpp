@@ -73,6 +73,11 @@ FFT_For_ESP8266::FFT_For_ESP8266(short analogPin, int numSamples,
     /* set parameters for the non linear x scale */
     _xScaleFactor = 1 / pow(1 - _xScaleThreshold, _xScalePower);
     _xScaleBar0 = ceil(_numBars * _xScaleThreshold);
+
+    /* Bar falling */
+    _previousFrame = new int[ _numSamples / 2 ];
+    memset(_previousFrame, 0, sizeof(int) * _numBars ); 
+    
 }
 
 void FFT_For_ESP8266::sampleFromADC(){
@@ -161,7 +166,12 @@ void FFT_For_ESP8266::buildGraph(output_t *out){
 
     int colStart = i * (_barWidth + _skipCol);
     int colEnd = i * (_barWidth + _skipCol) + _barWidth; 
-    output_t outVal = encodeBar(barHeight * scalingFactor); 
+
+    double x = barHeight * scalingFactor;
+    if(x < _previousFrame[i]) 
+      x = _previousFrame[i] - 1; 
+    _previousFrame[i] = x; 
+    output_t outVal = encodeBar(x); 
 
     int j; 
     for(j = colStart ; j < colEnd; j++){
@@ -169,8 +179,9 @@ void FFT_For_ESP8266::buildGraph(output_t *out){
     }
 
     if( i != _numBars - 1 ) // if not the last bar add blank
-      for(; j < colEnd + _skipCol; j++)
+      for(; j < colEnd + _skipCol; j++){
 	out[j] = encodeBar(0);
+      }
   }
 }
 
