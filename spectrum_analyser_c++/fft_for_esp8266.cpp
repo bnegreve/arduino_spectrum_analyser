@@ -70,6 +70,11 @@ FFT_For_ESP8266::FFT_For_ESP8266(short analogPin, int numSamples,
     }
     _dataImg = new double[_numSamples];
     
+    /* set parameters for the non linear x scale */
+    _xScaleFactor = 1 / pow(1 - _xScaleThreshold, _xScalePower);
+    _xScaleBar0 = ceil(numBars * _xScaleThreshold);
+    _xScaleNumBands0 -= _xScaleBar0; 
+
 }
 
 void FFT_For_ESP8266::sampleFromADC(){
@@ -315,26 +320,21 @@ void FFT_For_ESP8266::printVector(double *vData, int bufferSize, uint8_t scaleTy
 
 int FFT_For_ESP8266::barsToBands(int barIndex, int numBars, int numBands){
 
-  float threshold = 0.2; 
-
   /* linear scale for the first 10% of the frequency spectrum */
   float spectrumPos = (float)barIndex / numBars; 
-
-  if( spectrumPos <= threshold){
+  
+  if( spectrumPos <= _xScaleThreshold){
     return barIndex; 
   }
   else{
-    int b0 = ceil(numBars * threshold);
-    numBands -= b0; 
     //    Serial.println("Log "); 
-    int power = 2; 
-    float scale = 1 / pow(1 - threshold, power);
     // Serial.print("Scale "); 
     // Serial.println(scale); 
     // Serial.print("S pos "); 
     // Serial.println(spectrumPos); 
     // Serial.print("Power ");
     // Serial.println(pow(spectrumPos - 0.1, power) * scale); 
-    return (pow(spectrumPos - threshold, power) * scale) * numBands  + b0; 
+    return (pow(spectrumPos - _xScaleThreshold, _xScalePower) * _xScaleFactor) *
+      numBands  + _xScaleNumBands0; 
   }
 }

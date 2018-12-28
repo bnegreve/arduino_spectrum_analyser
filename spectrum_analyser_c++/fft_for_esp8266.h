@@ -63,12 +63,19 @@ class FFT_For_ESP8266 {
   int _numLines; 
   int _barWidth; 
   int _skipCol; 
+  const double _xScaleThreshold = 0.2; // switch from linear to logscale at x %
+  const int _xScalePower = 2;  // base of the logarithmic x scale 
+// buffer values to avoid recomputations
+  double _xScaleFactor; 
+  int _xScaleBar0; 
+  int _xScaleNumBands0; 
+
   arduinoFFT _fft; 
   double *_data; 
   double *_dataImg; 
 
   /* skip first n bands  (lower frequencies) */
-  static const short _skipLowBands = 1; 
+  static const short _skipLowBands = 2; 
 
   /* Parameters for the smooth y scaling ... 
    * (see comment on smoothMax() in this file for more details) */
