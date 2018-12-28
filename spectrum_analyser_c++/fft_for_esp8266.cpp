@@ -249,11 +249,14 @@ double FFT_For_ESP8266::smoothMax(double *data, int size){
 
   // set new value
   double currentMax = maxv(data, size); 
+  currentMax = currentMax>500?currentMax:500; //TODO make it a parameter
+
   _previousValues[ _windowSize - 1 ] = max(_previousValues[ _windowSize - 1 ],
 					   currentMax);
   printVector(_previousValues, _windowSize, SCL_INDEX); 
  
   double avgMax = (_previousSum + _previousValues[ _windowSize - 1 ]) / _windowSize;
+
 
   #ifndef NDEBUG
   Serial.print("Smoothmax: ");
