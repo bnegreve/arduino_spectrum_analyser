@@ -16,10 +16,9 @@ uint8_t amplitude = 50;
 #define SCL_TIME 0x01
 #define SCL_FREQUENCY 0x02
 
-static int barsToBands(int barIndex, int numBars, int numBands); 
-
 FFT_For_ESP8266::FFT_For_ESP8266(short analogPin, int numSamples,
 				 int displayWidth, int displayHeight,
+				 double *buffer,
 				 int numBars, int numLines, int barWidth, int skipCol):
   _analogPin(analogPin), 
   _numSamples(numSamples), 
@@ -65,11 +64,11 @@ FFT_For_ESP8266::FFT_For_ESP8266(short analogPin, int numSamples,
     assert(_numBars <= _numSamples / 2);
 
     int numBands = _numSamples / 2 - _skipLowBands; 
-    _scalePower = setXScale(numBands, _numBars); 
 
-    _data = new double[_numSamples];
+    if(buffer == NULL){
+      _data = new double[_numSamples];
+    }
     _dataImg = new double[_numSamples];
-
     
 }
 
@@ -314,15 +313,7 @@ void FFT_For_ESP8266::printVector(double *vData, int bufferSize, uint8_t scaleTy
 #endif
 }
 
-double FFT_For_ESP8266::setXScale(int numBands, int numBars){
-  return log( numBands ) / log(_numBars); 
-}
-
-double FFT_For_ESP8266::xscale(double val){
-  return pow(val, _scalePower); 
-}
-
-static int barsToBands(int barIndex, int numBars, int numBands){
+int FFT_For_ESP8266::barsToBands(int barIndex, int numBars, int numBands){
 
   float threshold = 0.2; 
 

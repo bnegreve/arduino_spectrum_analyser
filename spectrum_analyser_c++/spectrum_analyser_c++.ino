@@ -24,6 +24,8 @@ void setup()
 void loop() 
 {
 
+  //  double buffer[128]; 
+
   FFT_For_ESP8266 fft(0, 128, 48, 8);
 
   for(;;){

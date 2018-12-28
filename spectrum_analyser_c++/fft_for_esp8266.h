@@ -17,8 +17,9 @@ class FFT_For_ESP8266 {
   public:
 
   /* ctor */
-  FFT_For_ESP8266(short analogPin, int numSamples,
-		  int displayWidth, int displayHeight, int numBars = 0, 
+  FFT_For_ESP8266(short analogPin, int numSamples, 
+		  int displayWidth, int displayHeight, 
+		  double *buffer = NULL, int numBars = 0, 
 		  int numLines = 0, int barWidth = 3, int skipLine = 1); 
 
   /* Main functions */
@@ -116,18 +117,8 @@ class FFT_For_ESP8266 {
   void printSamplingInfo(double *data, int size);
   void printVector(double *vData, int bufferSize, uint8_t scaleType);
   output_t encodeBar(output_t val);
-  /* convert linear scale to log scale 
-   *
-   * The value of xscale depends on _scalePower, which is set to
-   * garantee that two different bars will fetch data from two
-   * distinct bands (see setXScale())*/
-  double xscale(double val);
-  /* Use to compute the exponent for the horizontal logarithmic scale (see xscale()) 
-   * Return the maximal exponent that garantees that two different bars will fetch data from two distinct bands
-   * I.e. that (1/bars)^_scalePower * bands >= 1
-   */
-  double setXScale(int numBands, int numBars); 
-  
+  /* Convert bar ids to band ids (in a non linear fashion) */
+  int barsToBands(int barIndex, int numBars, int numBands);  
 
 
 };
