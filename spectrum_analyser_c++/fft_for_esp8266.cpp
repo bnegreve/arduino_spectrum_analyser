@@ -3,10 +3,6 @@
 
 #include "fft_for_esp8266.h"
 
-/* Required for speeding up the ADC */
-#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
-#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
-
 /* Fake signal generation */
 //#define GENERATE_FAKE_SIGNAL 1 //Generate fake signal instead of reading from ADC
 #define Theta 6.2831 //2*Pi
@@ -20,7 +16,7 @@ uint8_t amplitude = 50;
 #define SCL_TIME 0x01
 #define SCL_FREQUENCY 0x02
 
-
+static int barsToBands(int barIndex, int numBars, int numBands); 
 
 FFT_For_ESP8266::FFT_For_ESP8266(short analogPin, int numSamples,
 				 int displayWidth, int displayHeight,
@@ -140,9 +136,9 @@ void FFT_For_ESP8266::buildGraph(output_t *out){
 
   /* Loop through display columns */
   for(int i = 0; i < _numBars; i++){
-    int bandStart = xscale((float)i / _numBars) * numBands + _skipLowBands; 
-    int bandEnd = xscale((float)(i+1) / _numBars) * numBands + _skipLowBands;
-    
+    int bandStart = barsToBands(i, _numBars, numBands) + _skipLowBands; 
+    int bandEnd = barsToBands(i + 1, _numBars, numBands) + _skipLowBands; 
+
     double barHeight = 0;
     for(int j = bandStart; j < bandEnd; j++){
       /* take the maximum value of all bands displayed by this column */
@@ -223,11 +219,9 @@ output_t FFT_For_ESP8266::encodeBar(output_t val){
 /* Compute the maximum value of a vector of size > 0 */
 double FFT_For_ESP8266::maxv(double *data, int size){
   assert(size != 0);
-  assert(size - _skipLowBands > 0);
-
-  int i = _skipLowBands; 
+  int i; 
   double max = data[i];
-  for(i = _skipLowBands+1; i < size; i++){
+  for(i = 1; i < size; i++){
     max = data[i]>max?data[i]: max;
   }
   return max;
@@ -235,6 +229,7 @@ double FFT_For_ESP8266::maxv(double *data, int size){
 
 double FFT_For_ESP8266::smoothMax(double *data, int size){
   /* every 16 frames, shift all values by one, drop the oldest value and set the new value to 0 */
+
   if( _count++ % _frameGroupSize  == 0) {
 
     // Substract oldest max, add newst max
@@ -327,3 +322,28 @@ double FFT_For_ESP8266::xscale(double val){
   return pow(val, _scalePower); 
 }
 
+static int barsToBands(int barIndex, int numBars, int numBands){
+
+  float threshold = 0.2; 
+
+  /* linear scale for the first 10% of the frequency spectrum */
+  float spectrumPos = (float)barIndex / numBars; 
+
+  if( spectrumPos <= threshold){
+    return barIndex; 
+  }
+  else{
+    int b0 = ceil(numBars * threshold);
+    numBands -= b0; 
+    //    Serial.println("Log "); 
+    int power = 2; 
+    float scale = 1 / pow(1 - threshold, power);
+    // Serial.print("Scale "); 
+    // Serial.println(scale); 
+    // Serial.print("S pos "); 
+    // Serial.println(spectrumPos); 
+    // Serial.print("Power ");
+    // Serial.println(pow(spectrumPos - 0.1, power) * scale); 
+    return (pow(spectrumPos - threshold, power) * scale) * numBands  + b0; 
+  }
+}

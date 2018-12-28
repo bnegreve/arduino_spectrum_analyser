@@ -15,6 +15,7 @@ void setup()
   pinMode(0, INPUT);
 
   /* Speedup the ADC */
+  // See http://i187.photobucket.com/albums/x269/jmknapp/adc_prescale.png
   sbi(ADCSRA, ADPS2);
   cbi(ADCSRA, ADPS1);
   cbi(ADCSRA, ADPS0);
